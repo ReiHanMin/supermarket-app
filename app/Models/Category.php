@@ -30,7 +30,15 @@ class Category extends Model
 
     public function products()
     {
-        return $this->belongsToMany(Product::class); // product_category
+        return $this->belongsToMany(Product::class); // Existing product-category relationship
+    }
+
+    /**
+     * Get all bentos associated with the category.
+     */
+    public function bentos()
+    {
+        return $this->belongsToMany(Bento::class, 'bento_category', 'category_id', 'bento_id');
     }
 
     public static function getActiveAsTree($resourceClassName = null)

@@ -19,7 +19,10 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('last_name');
             $table->string('phone')->nullable();
-            $table->string('status', 45)->nullable();
+
+            // Update the status column to use enum values
+            $table->enum('status', ['active', 'inactive'])->default('active'); // Example values, modify according to your enum values
+
             $table->timestamps();
             $table->foreignIdFor(User::class, 'created_by')->nullable();
             $table->foreignIdFor(User::class, 'updated_by')->nullable();

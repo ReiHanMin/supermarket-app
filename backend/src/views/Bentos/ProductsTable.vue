@@ -35,7 +35,7 @@
         </TableHeaderCell>
         <TableHeaderCell field="price" :sort-field="sortField" :sort-direction="sortDirection"
                          @click="sortProducts('price')">
-          Price
+          Price (¥)
         </TableHeaderCell>
         <TableHeaderCell field="quantity" :sort-field="sortField" :sort-direction="sortDirection"
                          @click="sortProducts('quantity')">
@@ -71,8 +71,8 @@
           {{ product.title }}
         </td>
         <td class="border-b p-2">
-          {{ $filters.currencyUSD(product.price) }}
-        </td>
+    {{ formatCurrency(product.price) }}
+  </td>
         <td class="border-b p-2">
           {{ product.quantity }}
         </td>
@@ -198,6 +198,16 @@ const product = ref({})
 onMounted(() => {
   getProducts();
 })
+
+function formatCurrency(value) {
+  if (typeof value !== "number") {
+    return value;
+  }
+  return new Intl.NumberFormat('ja-JP', {
+    style: 'currency',
+    currency: 'JPY'
+  }).format(value);
+}
 
 function getForPage(ev, link) {
   ev.preventDefault();

@@ -1,8 +1,9 @@
-import {createRouter, createWebHistory} from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 import AppLayout from '../components/AppLayout.vue'
 import Login from "../views/Login.vue";
 import Dashboard from "../views/Dashboard.vue";
-import Products from "../views/Products/Products.vue";
+import Bentos from "../views/Bentos/Bentos.vue"; // Updated from Products to Bentos
+import BentoView from "../views/Bentos/BentoView.vue"; // Import the BentoView component
 import Users from "../views/Users/Users.vue";
 import Customers from "../views/Customers/Customers.vue";
 import CustomerView from "../views/Customers/CustomerView.vue";
@@ -15,7 +16,7 @@ import store from "../store";
 import Report from "../views/Reports/Report.vue";
 import OrdersReport from "../views/Reports/OrdersReport.vue";
 import CustomersReport from "../views/Reports/CustomersReport.vue";
-import ProductForm from "../views/Products/ProductForm.vue";
+import BentoForm from "../views/Bentos/BentoForm.vue"; // Updated from ProductForm to BentoForm
 import Categories from "../views/Categories/Categories.vue";
 
 const routes = [
@@ -38,9 +39,9 @@ const routes = [
         component: Dashboard
       },
       {
-        path: 'products',
-        name: 'app.products',
-        component: Products
+        path: 'bentos',
+        name: 'app.bentos',
+        component: Bentos // Updated from Products to Bentos
       },
       {
         path: 'categories',
@@ -48,17 +49,15 @@ const routes = [
         component: Categories
       },
       {
-        path: 'products/create',
-        name: 'app.products.create',
-        component: ProductForm
+        path: 'bentos/create',
+        name: 'app.bentos.create',
+        component: BentoForm // Updated from ProductForm to BentoForm
       },
       {
-        path: 'products/:id',
-        name: 'app.products.edit',
-        component: ProductForm,
-        props: {
-          id: (value) => /^\d+$/.test(value)
-        }
+        path: 'bentos/:id',
+        name: 'app.bentos.view', // Updated from products to bentos
+        component: BentoView, // Updated to BentoView component
+        props: true
       },
       {
         path: 'users',
@@ -151,7 +150,6 @@ router.beforeEach((to, from, next) => {
   } else {
     next();
   }
-
 })
 
 export default router;

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Api\BentoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,11 +21,13 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Routes that require authentication
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/user', [\App\Http\Controllers\Api\AuthController::class, 'getUser']);
     Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
 
-    Route::apiResource('products', ProductController::class);
+    Route::get('bentos/{bento}', [BentoController::class, 'show']);
+    Route::get('/dashboard/recent-stores', [DashboardController::class, 'recentStores']);
     Route::apiResource('users', UserController::class);
     Route::apiResource('customers', CustomerController::class);
     Route::apiResource('categories', CategoryController::class)->except('show');
@@ -36,9 +39,11 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('orders/{order}', [OrderController::class, 'view']);
 
     // Dashboard Routes
-    Route::get('/dashboard/customers-count', [DashboardController::class, 'activeCustomers']);
-    Route::get('/dashboard/products-count', [DashboardController::class, 'activeProducts']);
-    Route::get('/dashboard/orders-count', [DashboardController::class, 'paidOrders']);
+    Route::get('/dashboard/users-count', [DashboardController::class, 'activeUsers']);
+    Route::get('/dashboard/bentos-count', [DashboardController::class, 'activeBentos']);
+    Route::get('/dashboard/stores-count', [DashboardController::class, 'activeStores']);
+    Route::get('/dashboard/reviews-count', [DashboardController::class, 'activeReviews']);
+    Route::get('/dashboard/recent-bentos', [DashboardController::class, 'recentBentos']);
     Route::get('/dashboard/income-amount', [DashboardController::class, 'totalIncome']);
     Route::get('/dashboard/orders-by-country', [DashboardController::class, 'ordersByCountry']);
     Route::get('/dashboard/latest-customers', [DashboardController::class, 'latestCustomers']);
@@ -48,5 +53,14 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/report/orders', [ReportController::class, 'orders']);
     Route::get('/report/customers', [ReportController::class, 'customers']);
 });
+
+// Routes for actions that only authenticated users can perform
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/bentos/{bento}/like', [BentoController::class, 'likeBento']);
+    Route::post('/bentos/{bento}/dislike', [BentoController::class, 'dislikeBento']);
+    Route::post('/bentos/{bento}/comment', [BentoController::class, 'commentOnBento']);
+});
+
+// Publicly accessible routes
 
 Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);

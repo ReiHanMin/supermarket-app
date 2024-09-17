@@ -13,6 +13,15 @@ export default {
     limit: null,
     total: null
   },
+  bentos: {
+    loading: false,
+    data: [],
+    total: 0,
+    from: 0,
+    to: 0,
+    limit: 20,
+    links: []
+  },
   users: {
     loading: false,
     data: [],
