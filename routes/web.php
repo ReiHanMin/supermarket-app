@@ -4,8 +4,10 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\BentoController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -17,9 +19,10 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
 */
+Route::get('/', [BentoController::class, 'index'])->name('home');
 
 Route::middleware(['guestOrVerified'])->group(function () {
-    Route::get('/', [ProductController::class, 'index'])->name('home');
+    
     Route::get('/category/{category:slug}', [ProductController::class, 'byCategory'])->name('byCategory');
     Route::get('/product/{product:slug}', [ProductController::class, 'view'])->name('product.view');
 

@@ -53,31 +53,41 @@
     <!-- Recent Bentos Updates -->
 <div class="col-span-1 md:col-span-2 row-span-1 md:row-span-2 bg-white py-6 px-5 rounded-lg shadow">
     <label class="text-lg font-semibold block mb-2">Recent Bentos Updates</label>
-    <template v-if="!loading.recentBentos">
-        <div v-for="b of recentBentos" :key="b.id" class="py-2 px-3 hover:bg-gray-50">
-          <router-link :to="{ name: 'app.bentos.view', params: { id: b.id } }" >
-            <p class="text-indigo-700 font-semibold">
-                
-                    Bento #{{ b.id }}: {{ b.name }}
-                
-                added on {{ b.created_at }}.
-            </p>
-            <p class="flex justify-between">
-                <span>{{ b.store_name }}</span>
-                <span>{{ b.discount_percentage }}% off</span>
-            </p>
-            <!-- Add new fields -->
-            <p v-if="b.image_url"><img :src="b.image_url" alt="Bento Image" class="w-20 h-20 object-cover rounded"/></p>
-            <p>Ingredients: {{ b.ingredients }}</p>
-            <p>Calories: {{ b.calories }} kcal</p>
-            <p v-if="b.availability">Available: {{ b.availability }}</p>
-            <p v-else>Not Available</p>
-            <p>Rating: {{ b.rating }} ({{ b.reviews_count }} reviews)</p>
+
+    <!-- Show spinner when loading -->
+    <template v-if="loading.recentBentos">
+        <Spinner text="Loading..." class="" />
+    </template>
+
+    <!-- Show recent bentos once loading is complete and data exists -->
+    <template v-else-if="recentBentos && recentBentos.length > 0">
+        <div v-for="b of recentBentos" :key="b?.id" class="py-2 px-3 hover:bg-gray-50">
+            <router-link :to="{ name: 'app.bentos.view', params: { id: b?.id } }" >
+                <p class="text-indigo-700 font-semibold">
+                    Bento #{{ b?.id }}: {{ b?.name }} added on {{ b?.created_at }}.
+                </p>
+                <p class="flex justify-between">
+                    <span>{{ b?.store_name || 'Unknown Store' }}</span>
+                    <span>{{ b?.discount_percentage || 'No discount' }}% off</span>
+                </p>
+                <p v-if="b?.image_url">
+                    <img :src="b?.image_url" alt="Bento Image" class="w-20 h-20 object-cover rounded"/>
+                </p>
+                <p>Ingredients: {{ b?.ingredients || 'N/A' }}</p>
+                <p>Calories: {{ b?.calories || 'N/A' }} kcal</p>
+                <p v-if="b?.availability">Available: {{ b?.availability }}</p>
+                <p v-else>Not Available</p>
+                <p>Rating: {{ b?.rating || 'No rating' }} ({{ b?.reviews_count || 0 }} reviews)</p>
             </router-link>
         </div>
     </template>
-    <Spinner v-else text="" class="" />
+
+    <!-- Fallback if no bentos available -->
+    <template v-else>
+        <p>No recent bentos available.</p>
+    </template>
 </div>
+
 
 
     <!-- Recent Store Updates -->
@@ -90,21 +100,30 @@
     </div>
 
     <!-- Latest User Feedback -->
-    <div class="bg-white py-6 px-5 rounded-lg shadow">
-      <label class="text-lg font-semibold block mb-2">Latest User Feedback</label>
-      <template v-if="!loading.latestFeedback">
-        <div v-for="feedback in latestFeedback" :key="feedback.id" class="mb-3 flex">
-          <div class="w-12 h-12 bg-gray-200 flex items-center justify-center rounded-full mr-2">
-            <UserIcon class="w-5" />
-          </div>
-          <div>
-            <h3>{{ feedback.user_name }}</h3>
-            <p>{{ feedback.comment }}</p>
-          </div>
-        </div>
-      </template>
-      <Spinner v-else text="" class="" />
+   <div class="bg-white py-6 px-5 rounded-lg shadow">
+  <label class="text-lg font-semibold block mb-2">Latest User Feedback</label>
+
+  <!-- Show Spinner while loading -->
+  <template v-if="loading.latestFeedback">
+    <Spinner text="Loading..." />
+  </template>
+
+  <!-- Show Feedback once loading is complete -->
+  <template v-else-if="latestFeedback && latestFeedback.length > 0">
+    <div v-for="feedback in latestFeedback" :key="feedback.id" class="mb-4">
+      <h3 class="font-semibold">{{ feedback.user_name }}</h3>
+      <p>{{ feedback.comment }}</p>
+      <small class="text-gray-500">Commented on {{ new Date(feedback.created_at).toLocaleDateString() }}</small>
     </div>
+  </template>
+
+  <!-- Fallback if no feedback available -->
+  <template v-else>
+    <p>No recent feedback available.</p>
+  </template>
+</div>
+
+
   </div>
 </template>
 
@@ -140,6 +159,8 @@ const userFeedbackCount = ref(0);
 const recentBentos = ref([]);
 const recentStores = ref([]);
 const latestFeedback = ref([]);
+const search = ref(''); // Initializing search as an empty string
+
 
 function updateDashboard() {
   const d = chosenDate.value;
@@ -184,19 +205,34 @@ axiosClient.get(`/dashboard/reviews-count`, { params: { d } })
     console.error('Error fetching review count:', error);
   });
 
-  axiosClient.get(`/dashboard/user-feedback`, { params: { d } }).then(({ data }) => {
-    userFeedbackCount.value = data.length;
+  axiosClient.get(`/dashboard/user-feedback`).then(({ data }) => {
     latestFeedback.value = data;
-    loading.value.userFeedback = false;
+    loading.value.latestFeedback = false;
+}).catch(error => {
+    console.error("Error fetching latest feedback:", error);
+    loading.value.latestFeedback = false;
+});
+
+
+  
+  axiosClient.get(`/dashboard/recent-bentos`, {
+    params: {
+    per_page: 10,           // Adjust as needed, or make this dynamic
+    search: search.value,    // Bound to the initialized search ref
+    sort_field: 'created_at', // Dynamic sort field
+    sort_direction: 'desc'   // Sort in descending order
+  }
+  })
+  .then(({ data }) => {
+  recentBentos.value = data.data;  // Handle pagination if needed (using .data here)
+  loading.value.recentBentos = false;
+  })
+  .catch(error => {
+  console.error("Error fetching recent bentos:", error);
+  loading.value.recentBentos = false;
   });
 
-  axiosClient.get(`/dashboard/recent-bentos`, { params: { d } }).then(({ data }) => {
-    recentBentos.value = data;
-    loading.value.recentBentos = false;
-}).catch(error => {
-    console.error("Error fetching recent bentos:", error);
-    loading.value.recentBentos = false;
-});
+
 
 
   axiosClient.get(`/dashboard/recent-stores`).then(({ data }) => {

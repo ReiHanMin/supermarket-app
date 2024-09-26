@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Enums\UserStatus; // Make sure to import your UserStatus enum
+use App\Enums\UserStatus; // Import your UserStatus enum
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -24,7 +24,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'email_verified_at',
         'is_admin',
-        'status' // Include 'status' if you want it to be mass assignable
+        'status', // Include 'status' if you want it to be mass assignable
     ];
 
     /**
@@ -59,13 +59,22 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     public function likes()
-{
-    return $this->hasMany(Like::class);
-}
+    {
+        return $this->hasMany(Like::class);
+    }
 
-public function comments()
-{
-    return $this->hasMany(Comment::class);
-}
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
 
+    /**
+     * Check if the user is an admin.
+     *
+     * @return bool
+     */
+    public function isAdmin(): bool
+    {
+        return (bool) $this->is_admin;
+    }
 }

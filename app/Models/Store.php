@@ -16,9 +16,11 @@ class Store extends Model
      */
     protected $fillable = [
         'name',
-        'location',
-        'contact_number',
-        'status',
+        'chain_name',
+        'address',
+        'email',
+        'phone',
+        'photo'
     ];
 
     /**
@@ -27,6 +29,15 @@ class Store extends Model
      */
     public function bentos()
     {
-        return $this->hasMany(Bento::class);
+    return $this->belongsToMany(Bento::class, 'bento_store')
+                ->withPivot('current_discount', 'stock_level')
+                ->withTimestamps();
     }
+
+
+    public function chain()
+    {
+    return $this->belongsTo(Chain::class);
+    }
+
 }

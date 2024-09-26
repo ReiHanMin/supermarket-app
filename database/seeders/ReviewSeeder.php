@@ -3,52 +3,46 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Review;
-use App\Models\User;
-use App\Models\Bento;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class ReviewSeeder extends Seeder
 {
     public function run()
     {
-        // Ensure we have users and bentos to associate with reviews
-        $users = User::all();
-        $bentos = Bento::all();
-
-        if ($users->isEmpty() || $bentos->isEmpty()) {
-            $this->command->info('Please seed users and bentos tables first.');
+        // Make sure users exist for the foreign key (user_id)
+        $users = DB::table('users')->pluck('id')->toArray();
+        
+        if (count($users) == 0) {
+            $this->command->info('No users found, make sure users are seeded first.');
             return;
         }
 
-        foreach ($bentos as $bento) {
-            $numberOfReviews = rand(1, 5);  // Random number of reviews per bento
-
-            for ($i = 0; $i < $numberOfReviews; $i++) {
-                Review::create([
-                    'user_id' => $users->random()->id,
-                    'bento_id' => $bento->id,
-                    'comment' => $this->getRandomComment(),
-                    'rating' => rand(1, 5),
-                ]);
-            }
-        }
-    }
-
-    private function getRandomComment()
-    {
-        $comments = [
-            "Delicious! Will order again.",
-            "Good value for money.",
-            "Fresh ingredients, loved it!",
-            "Portion size could be bigger.",
-            "Great taste, but delivery was slow.",
-            "Perfect for a quick lunch.",
-            "Healthy and tasty option.",
-            "Not bad, but I've had better.",
-            "Exceeded my expectations!",
-            "Will recommend to friends.",
+        // Sample data for reviews
+        $reviews = [
+            [
+                'user_id' => $users[array_rand($users)], // Random user ID from the users table
+                'bento_id' => 2,
+                'comment' => 'This bento is amazing! Perfect portion size.',
+                'rating' => 4.5,
+                'review_text' => 'I loved the chicken bento, especially the teriyaki sauce. Will order again!',
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ],
+            [
+                'user_id' => $users[array_rand($users)],
+                'bento_id' => 3,
+                'comment' => 'A bit too salty for my taste.',
+                'rating' => 3.0,
+                'review_text' => 'The beef bento was okay, but I found it a bit too salty. Otherwise, great quality.',
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ],
+            
         ];
 
-        return $comments[array_rand($comments)];
+        // Insert the sample reviews into the database
+        DB::table('reviews')->insert($reviews);
     }
 }

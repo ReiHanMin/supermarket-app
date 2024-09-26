@@ -124,14 +124,110 @@ export function deleteProduct({ commit }, id) {
 export async function getBentos({ commit }, params) {
   commit("setBentosLoading", true);
   try {
-    const response = await axiosClient.get("/dashboard/recent-bentos", { params });
-    commit("setBentosData", response.data);
+    const response = await axiosClient.get("/bentos", { params });
+    commit("setBentosData", response.data); // Handle the response in Vuex
   } catch (error) {
     console.error("Error fetching bentos:", error);
   } finally {
     commit("setBentosLoading", false);
   }
 }
+
+
+export async function getStores({ commit }, params) {
+  commit("setStores", [true]);  // Set loading to true before the request
+  try {
+    // Retrieve the token from localStorage
+    const token = localStorage.getItem('TOKEN');
+
+    // Perform the API request with the token in the Authorization header
+    const response = await axiosClient.get("/stores", {
+      params,
+      headers: {
+        'Authorization': `Bearer ${token}`,  // Use the token in the header
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log("Stores response:", response);  // Debugging line
+    commit("setStores", [false, response.data]);  // Pass data and set loading to false
+  } catch (error) {
+    console.error("Error fetching stores:", error);
+    commit("setStores", [false]);  // Set loading to false in case of error
+  }
+}
+
+
+
+export async function createStore({ commit }, storeData) {
+  try {
+    const token = localStorage.getItem('TOKEN');
+    
+    console.log("FormData being sent:");
+    for (let pair of storeData.entries()) {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
+
+    const response = await axiosClient.post('/stores', storeData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    commit('setStoreData', response.data);
+    return response;
+  } catch (error) {
+    // Capture validation errors
+    if (error.response && error.response.status === 422) {
+      console.error("Validation errors:", error.response.data.errors);
+    } else {
+      console.error("Error creating store:", error);
+    }
+    throw error;
+  }
+}
+
+
+
+
+
+
+
+
+
+// Fetch single store (for editing)
+export async function getStore({ commit }, id) {
+  return axiosClient.get(`/stores/${id}`);
+}
+
+// Update store
+export async function updateStore({ commit }, storeData) {
+  console.log("Store Data ID:", storeData.get('id'));  // Logs the ID for debugging
+
+  // Add the `_method` field to simulate a PUT request
+  storeData.append('_method', 'PUT');
+
+  try {
+    // Change the request method to POST and let Laravel interpret it as a PUT request
+    const response = await axiosClient.post(`/stores/${storeData.get('id')}`, storeData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    commit('setStoreData', response.data);  // Commits the updated store data
+    return response;
+  } catch (error) {
+    console.error("Error updating store:", error);  // Catches any errors
+    throw error;
+  }
+}
+
+
+
+
+
 
 export function getUsers({ commit, state }, { url = null, search = '', per_page, sort_field, sort_direction } = {}) {
   commit('setUsers', [true]);
@@ -200,6 +296,29 @@ export function deleteCustomer({ commit }, customer) {
 export function deleteUser({ commit }, user) {
   return axiosClient.delete(`/users/${user.id}`);
 }
+
+export async function deleteStore({ commit }, storeId) {
+  try {
+    const response = await axiosClient.delete(`/stores/${storeId}`);
+    return response;
+  } catch (error) {
+    console.error("Error deleting store:", error);
+    throw error;
+  }
+}
+
+export async function deleteBento({ commit }, bentoId) {
+  try {
+    const response = await axiosClient.delete(`/bentos/${bentoId}`);
+    commit('removeBento', bentoId);  // Commit a mutation to remove the bento from the state
+    return response;
+  } catch (error) {
+    console.error("Error deleting bento:", error);
+    throw error;  // Re-throw the error to be handled in the component
+  }
+}
+
+
 
 export function getCategories({ commit, state }, { sort_field, sort_direction } = {}) {
   commit('setCategories', [true]);

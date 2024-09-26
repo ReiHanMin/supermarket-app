@@ -14,6 +14,7 @@ class Review extends Model
         'bento_id',
         'comment',
         'rating',
+        'review_text',
     ];
 
     // Relationships

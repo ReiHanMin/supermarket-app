@@ -10,7 +10,8 @@
       <div class="mb-4">
         <img :src="bento.image_url" alt="Bento Image" class="w-20 h-20 object-cover rounded" />
         <h2 class="text-xl font-bold">{{ bento.name }}</h2>
-        <p class="text-gray-600">Price: ¥{{ bento.price }}</p>
+        <p class="text-gray-600">Price: ¥{{ bento.original_price }}</p>
+        <p class="text-gray-600">Discounted Price: ¥{{ bento.usual_discounted_price }}</p> 
         <p class="text-gray-600">Store: {{ bento.store_name }}</p>
         <p class="text-gray-600">Discount: {{ bento.discount_percentage }}%</p>
         <p class="text-gray-600">Description: {{ bento.description }}</p>
@@ -48,16 +49,29 @@ onMounted(() => {
 
 function fetchBentoDetails(id) {
   axiosClient.get(`/bentos/${id}`)
+  .then(response => {
+    console.log(response.data); // Check if the price fields are included
+    bento.value = response.data;
+    fetchStoreDetails(bento.value.store_id);
+    loading.value = false;
+  })
+  .catch(error => {
+    console.error('Error fetching bento details:', error);
+    loading.value = false;
+  });
+
+}
+
+function fetchStoreDetails(storeId) {
+  axiosClient.get(`/stores/${storeId}`)
     .then(response => {
-      console.log(response.data); // Check the exact response structure
-      bento.value = response.data; // Adjust as necessary based on your API response structure
-      loading.value = false;
+      bento.value.store_name = response.data.name; // Assuming the store's name is returned
     })
     .catch(error => {
-      console.error('Error fetching bento details:', error);
-      loading.value = false;
+      console.error('Error fetching store details:', error);
     });
 }
+
 
 </script>
 

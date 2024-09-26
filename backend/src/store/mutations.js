@@ -32,18 +32,27 @@ export function setBentosLoading(state, loading) {
   state.bentos.loading = loading;
 }
 
-export function setBentosData(state, data) {
+export function setBentosData(state, response) {
+  // Check if response contains a 'data' array (pagination format)
+  const bentosData = response.data || response;
+
+  // Update state.bentos with the correct data structure
   state.bentos = {
     ...state.bentos, // Preserve other properties like loading, total, etc.
-    data: data.map(bento => ({
+    data: bentosData.map(bento => ({
       id: bento.id,
       name: bento.name,
       description: bento.description,
       price: bento.price,
+      original_price: bento.original_price,
+      usual_discount_percentage: bento.usual_discount_percentage,
+      usual_discounted_price: bento.usual_discounted_price,
+      estimated_discount_time: bento.estimated_discount_time,
+      discount_status: bento.discount_status,
+      stock_message: bento.stock_message,
+      average_rating: bento.average_rating,
+      total_reviews: bento.total_reviews,
       status: bento.status,
-      store_id: bento.store_id,
-      created_at: bento.created_at,
-      updated_at: bento.updated_at,
       image_url: bento.image_url,
       ingredients: bento.ingredients,
       calories: bento.calories,
@@ -51,10 +60,48 @@ export function setBentosData(state, data) {
       availability: bento.availability,
       rating: bento.rating,
       reviews_count: bento.reviews_count,
+      store_id: bento.store_id,
+      store_name: bento.store_name, // Added store name
+      chain_name: bento.chain_name, // Added chain name
+      created_at: bento.created_at,
+      updated_at: bento.updated_at,
     })),
-    total: data.length, // Update total count if necessary
+    total: response.total || bentosData.length, // Get total from response if available, otherwise use the length
+    from: response.from || 0,
+    to: response.to || bentosData.length,
+    limit: response.per_page || state.bentos.limit,
+    links: response.links || [], // Update pagination links if available
   };
 }
+
+
+export function setStores(state, [loading, stores = null]) {
+  state.stores.loading = loading;
+  if (stores) {
+    state.stores.data = stores.data || [];
+    state.stores.meta = stores.meta || {};
+  }
+}
+
+export function setStore(state, store) {
+  state.store = store;
+}
+
+
+
+
+export function addStore(state, store) {
+  state.stores.data.push(store);  // Assuming you have a stores array in your state
+}
+
+export function setStoreData(state, store) {
+  state.storeData = {
+    ...state.storeData,
+    ...store,
+  };
+}
+
+
 
 
 

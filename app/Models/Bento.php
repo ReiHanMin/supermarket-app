@@ -12,7 +12,8 @@ class Bento extends Model
     protected $fillable = [
         'name',
         'description',
-        'price',
+        'original_price',  
+        'usual_discounted_price',  // Add this field
         'calories',
         'availability',
         'discount_percentage',
@@ -20,9 +21,9 @@ class Bento extends Model
         'reviews_count',
         'store_id',
         'image_url',
-        'created_by',
-        'updated_by'
+        'stock_message',  // Add this field
     ];
+    
 
     // Define relationship to comments
     public function likes()
@@ -52,4 +53,24 @@ public function comments()
     {
         return $this->dislikes()->count();
     }
+
+    public function relatedItems()
+    {
+    return $this->hasMany(RelatedItem::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function stores()
+    {
+    return $this->belongsToMany(Store::class, 'bento_store')
+                ->withPivot('current_discount', 'stock_level')
+                ->withTimestamps();
+    }
+
+
+
 }

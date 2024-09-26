@@ -23,66 +23,78 @@
     <table class="table-auto w-full">
       <thead>
         <tr>
+          <!-- ID Column -->
           <TableHeaderCell field="id" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('id')">ID</TableHeaderCell>
+
+          <!-- Image Column -->
           <TableHeaderCell field="image" :sort-field="sortField" :sort-direction="sortDirection">Image</TableHeaderCell>
-          <TableHeaderCell field="name" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('name')">Name</TableHeaderCell>
-          <TableHeaderCell field="category" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('category')">Category</TableHeaderCell>
+
+          <!-- Bento Name Column -->
+          <TableHeaderCell field="name" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('name')">Bento Name</TableHeaderCell>
+
+          <!-- Original Price Column -->
           <TableHeaderCell field="original_price" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('original_price')">Original Price (¥)</TableHeaderCell>
-          <TableHeaderCell field="usual_discount_percentage" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('usual_discount_percentage')">Usual Discount (%)</TableHeaderCell>
+
+          <!-- Discount Percentage Column -->
+          <TableHeaderCell field="discount_percentage" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('discount_percentage')">Discount Percentage (%)</TableHeaderCell>
+
+          <!-- Discounted Price Column -->
           <TableHeaderCell field="usual_discounted_price" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('usual_discounted_price')">Discounted Price (¥)</TableHeaderCell>
-          <TableHeaderCell field="discount_time" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('discount_time')">Est. Discount Time</TableHeaderCell>
-          <TableHeaderCell field="discount_status" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('discount_status')">Discount Status</TableHeaderCell>
+
+          <!-- Stock Message Column -->
           <TableHeaderCell field="stock_message" :sort-field="sortField" :sort-direction="sortDirection">Stock Message</TableHeaderCell>
-          <TableHeaderCell field="chain_name" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('chain_name')">
-          Chain Name
-          </TableHeaderCell>
-          <TableHeaderCell field="store_name" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('store_name')">
-            Store Name
-          </TableHeaderCell>
-          <TableHeaderCell field="related_items">Related Items</TableHeaderCell>
-          <TableHeaderCell field="reviews" :sort-field="sortField" :sort-direction="sortDirection">Reviews/Rating</TableHeaderCell>
+
+          <!-- Availability Column -->
+          <TableHeaderCell field="availability" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('availability')">Availability</TableHeaderCell>
+
+          <!-- Store Name Column -->
+          <TableHeaderCell field="store_name" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('store_name')">Store Name</TableHeaderCell>
+
+          <!-- Actions Column -->
           <TableHeaderCell field="actions">Actions</TableHeaderCell>
         </tr>
       </thead>
-      <tbody v-if="bentos.loading || !bentos.data || !Array.isArray(bentos.data) || !bentos.data.length">
+
+      <tbody v-if="bentos.loading">
         <tr>
-          <td colspan="14">
-            <Spinner v-if="bentos.loading"/>
-            <p v-else class="text-center py-8 text-gray-700">There are no bentos</p>
+          <td colspan="10">
+            <Spinner />
+            <p class="text-center py-8 text-gray-700">Loading bentos...</p>
           </td>
         </tr>
       </tbody>
-      <tbody v-else>
+
+      <tbody v-else-if="bentos.data.length">
         <tr v-for="(bento, index) of bentos.data" :key="bento.id">
           <td class="border-b p-2">{{ bento.id }}</td>
-          <td class="border-b p-2">
-            <img v-if="bento.image_url" class="w-16 h-16 object-cover" :src="bento.image_url" :alt="bento.name">
-            <img v-else class="w-16 h-16 object-cover" src="../../assets/noimage.png">
-          </td>
-          <td class="border-b p-2 max-w-[200px] whitespace-nowrap overflow-hidden text-ellipsis">{{ bento.name }}</td>
-          <td class="border-b p-2">{{ bento.category }}</td>
+
+         <td class="border-b p-2">
+          <img
+            v-if="bento.image_url"
+            class="w-16 h-16 object-cover"
+            :src="getPhotoUrl(bento.image_url)"
+            :alt="bento.name"
+          />
+          <img v-else class="w-16 h-16 object-cover" src="../../assets/noimage.png" />
+        </td>
+
+
+
+          <td class="border-b p-2">{{ bento.name }}</td>
           <td class="border-b p-2">{{ formatCurrency(bento.original_price) }}</td>
-          <td class="border-b p-2">{{ bento.usual_discount_percentage ? bento.usual_discount_percentage + '%' : '-' }}</td>
-          <td class="border-b p-2">{{ formatCurrency(bento.usual_discounted_price) }}</td>
-          <td class="border-b p-2">{{ bento.discount_time || '-' }}</td>
-          <td class="border-b p-2">{{ bento.discount_status }}</td>
-          <td class="border-b p-2">{{ bento.stock_message }}</td>
-          <td class="border-b p-2">{{ bento.chain_name }}</td>
-          <td class="border-b p-2">{{ bento.store_name }}</td>
-          <td class="border-b p-2">
-            <button @click="editRelatedItems(bento)">Edit/Add Related Items</button>
-          </td>
-          <td class="border-b p-2">
-            ⭐⭐⭐⭐☆ ({{ bento.average_rating }}) ({{ bento.total_reviews }})
-            <button @click="manageReviews(bento)">Manage Reviews</button>
-          </td>
+          <td class="border-b p-2">{{ bento.discount_percentage ? bento.discount_percentage + '%' : '-' }}</td>
+          <td class="border-b p-2">{{ formatCurrency(bento.usual_discounted_price) || '-' }}</td>
+          <td class="border-b p-2">{{ bento.stock_message || '-' }}</td>
+          <td class="border-b p-2">{{ bento.availability || '-' }}</td>
+          <td class="border-b p-2">{{ bento.store_name || '-' }}</td>
+
           <td class="border-b p-2">
             <Menu as="div" class="relative inline-block text-left">
               <div>
                 <MenuButton
-                  class="inline-flex items-center justify-center w-full justify-center rounded-full w-10 h-10 bg-black bg-opacity-0 text-sm font-medium text-white hover:bg-opacity-5 focus:bg-opacity-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+                  class="inline-flex items-center justify-center w-full rounded-full w-10 h-10 bg-black bg-opacity-0 text-sm font-medium text-white hover:bg-opacity-5 focus:bg-opacity-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
                 >
-                  <DotsVerticalIcon class="h-5 w-5 text-indigo-500" aria-hidden="true"/>
+                  <DotsVerticalIcon class="h-5 w-5 text-indigo-500" aria-hidden="true" />
                 </MenuButton>
               </div>
               <transition
@@ -93,19 +105,17 @@
                 leave-from-class="transform scale-100 opacity-100"
                 leave-to-class="transform scale-95 opacity-0"
               >
-                <MenuItems
-                  class="absolute z-10 right-0 mt-2 w-32 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                >
+                <MenuItems class="absolute z-10 right-0 mt-2 w-32 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                   <div class="px-1 py-1">
                     <MenuItem v-slot="{ active }">
                       <router-link
-                        :to="{name: 'app.bentos.edit', params: {id: bento.id}}"
+                        :to="{ name: 'app.bentos.edit', params: { id: bento.id } }"
                         :class="[
                           active ? 'bg-indigo-600 text-white' : 'text-gray-900',
                           'group flex w-full items-center rounded-md px-2 py-2 text-sm',
                         ]"
                       >
-                        <PencilIcon :active="active" class="mr-2 h-5 w-5 text-indigo-400" aria-hidden="true"/>
+                        <PencilIcon :active="active" class="mr-2 h-5 w-5 text-indigo-400" aria-hidden="true" />
                         Edit
                       </router-link>
                     </MenuItem>
@@ -117,7 +127,7 @@
                         ]"
                         @click="deleteBento(bento)"
                       >
-                        <TrashIcon :active="active" class="mr-2 h-5 w-5 text-indigo-400" aria-hidden="true"/>
+                        <TrashIcon :active="active" class="mr-2 h-5 w-5 text-indigo-400" aria-hidden="true" />
                         Delete
                       </button>
                     </MenuItem>
@@ -125,6 +135,14 @@
                 </MenuItems>
               </transition>
             </Menu>
+          </td>
+        </tr>
+      </tbody>
+
+      <tbody v-else>
+        <tr>
+          <td colspan="10">
+            <p class="text-center py-8 text-gray-700">There are no bentos</p>
           </td>
         </tr>
       </tbody>
@@ -153,7 +171,7 @@
                 : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
               i === 0 ? 'rounded-l-md' : '',
               i === bentos.links.length - 1 ? 'rounded-r-md' : '',
-              !link.url ? ' bg-gray-100 text-gray-700': ''
+              !link.url ? ' bg-gray-100 text-gray-700' : ''
             ]"
           v-html="link.label"
         >
@@ -178,10 +196,8 @@ const bentos = computed(() => store.state.bentos);
 const sortField = ref('updated_at');
 const sortDirection = ref('desc');
 
-const bento = ref({});
-
 onMounted(() => {
-  getBentos();
+  fetchBentos();
 });
 
 function formatCurrency(value) {
@@ -203,15 +219,18 @@ function getForPage(ev, link) {
   getBentos(link.url);
 }
 
-function getBentos(url = null) {
+function fetchBentos(url = null) {
   store.dispatch("getBentos", {
     url,
-    search: search.value,
-    per_page: perPage.value,
-    sort_field: sortField.value,
-    sort_direction: sortDirection.value,
+    search: '', // or reactive search value
+    per_page: 10, // or reactive per_page value
+    sort_field: 'created_at',
+    sort_direction: 'desc',
+  }).then(() => {
+    console.log("Fetched bentos data:", store.state.bentos); // Access the state from the store
   });
 }
+
 
 function sortBentos(field) {
   if (field === sortField.value) {
@@ -229,19 +248,18 @@ function deleteBento(bento) {
     return;
   }
   store.dispatch('deleteBento', bento.id)
-    .then(res => {
+    .then(() => {
       store.commit('showToast', 'Bento was successfully deleted');
       store.dispatch('getBentos');
     });
 }
 
-function editRelatedItems(bento) {
-  // Logic to manage related items
+function getPhotoUrl(imageUrl) {
+  return `${import.meta.env.VITE_API_BASE_URL}${imageUrl}`; // For Vite
 }
 
-function manageReviews(bento) {
-  // Logic to manage reviews
-}
+
+
 </script>
 
 <style scoped></style>

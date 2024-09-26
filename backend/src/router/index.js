@@ -7,15 +7,15 @@ import BentoView from "../views/Bentos/BentoView.vue"; // Import the BentoView c
 import Users from "../views/Users/Users.vue";
 import Customers from "../views/Customers/Customers.vue";
 import CustomerView from "../views/Customers/CustomerView.vue";
-import Orders from "../views/Orders/Orders.vue";
-import OrderView from "../views/Orders/OrderView.vue";
+import Stores from "../views/Stores/Stores.vue"; // Add Stores page
+import StoreForm from "../views/Stores/StoreForm.vue"; // Import StoreForm component
 import RequestPassword from "../views/RequestPassword.vue";
 import ResetPassword from "../views/ResetPassword.vue";
 import NotFound from "../views/NotFound.vue";
 import store from "../store";
 import Report from "../views/Reports/Report.vue";
-import OrdersReport from "../views/Reports/OrdersReport.vue";
 import CustomersReport from "../views/Reports/CustomersReport.vue";
+import StoresReport from "../views/Reports/StoresReport.vue";  // Import StoresReport component
 import BentoForm from "../views/Bentos/BentoForm.vue"; // Updated from ProductForm to BentoForm
 import Categories from "../views/Categories/Categories.vue";
 
@@ -54,6 +54,11 @@ const routes = [
         component: BentoForm // Updated from ProductForm to BentoForm
       },
       {
+        path: 'bentos/:id/edit',
+        name: 'app.bentos.edit',
+        component: BentoForm // Updated from ProductForm to BentoForm
+      },
+      {
         path: 'bentos/:id',
         name: 'app.bentos.view', // Updated from products to bentos
         component: BentoView, // Updated to BentoView component
@@ -74,15 +79,22 @@ const routes = [
         name: 'app.customers.view',
         component: CustomerView
       },
+
       {
-        path: 'orders',
-        name: 'app.orders',
-        component: Orders
+        path: 'stores',  // Add Stores path
+        name: 'app.stores',
+        component: Stores
       },
       {
-        path: 'orders/:id',
-        name: 'app.orders.view',
-        component: OrderView
+        path: 'stores/create', // Add Create Store path
+        name: 'app.stores.create',
+        component: StoreForm
+      },
+      {
+        path: 'stores/:id',  // Add Store editing route
+        name: 'edit-store',
+        component: StoreForm,
+        props: true
       },
       {
         path: '/report',
@@ -92,15 +104,16 @@ const routes = [
           requiresAuth: true
         },
         children: [
-          {
-            path: 'orders/:date?',
-            name: 'reports.orders',
-            component: OrdersReport
-          },
+   
           {
             path: 'customers/:date?',
             name: 'reports.customers',
             component: CustomersReport
+          },
+          {
+            path: 'stores/:date?',  // Add Stores report route
+            name: 'reports.stores',
+            component: StoresReport
           }
         ]
       },

@@ -22,6 +22,10 @@ export default {
     limit: 20,
     links: []
   },
+    stores: {
+      data: [],
+      total: 0,
+    },
   users: {
     loading: false,
     data: [],

@@ -17,35 +17,39 @@ class BentoResource extends JsonResource
      * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
      */
     public function toArray($request)
-    {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'description' => $this->description,
-            'image_url' => $this->getImageUrl(),
-            'price' => $this->price,
-            'calories' => $this->calories,
-            'availability' => $this->availability,
-            'discount_percentage' => $this->discount_percentage,
-            'rating' => $this->rating,
-            'reviews_count' => $this->reviews_count,
-            'store_id' => $this->store_id,
-            'created_at' => (new \DateTime($this->created_at))->format('Y-m-d H:i:s'),
-            'updated_at' => (new \DateTime($this->updated_at))->format('Y-m-d H:i:s'),
-            'likes_count' => $this->likes()->where('type', 'like')->count(),
-            'dislikes_count' => $this->likes()->where('type', 'dislike')->count(),
-            'comments' => $this->comments()->get()->map(function ($comment) {
-                return [
-                    'id' => $comment->id,
-                    'user_id' => $comment->user_id,
-                    'comment' => $comment->comment,
-                    'created_at' => $comment->created_at->format('Y-m-d H:i:s'),
-                    'updated_at' => $comment->updated_at->format('Y-m-d H:i:s'),
-                ];
-            }),
-        ];
-    }
-    
+{
+    $data = [
+        'id' => $this->id,
+        'name' => $this->name,
+        'description' => $this->description,
+        'image_url' => $this->getImageUrl(),
+        'original_price' => $this->original_price,
+        'usual_discounted_price' => $this->usual_discounted_price,
+        'calories' => $this->calories,
+        'availability' => $this->availability,
+        'stock_message' => $this->stock_message,
+        'discount_percentage' => $this->discount_percentage,
+        'store_id' => $this->store_id,
+        'store_name' => $this->store->name ?? null,
+        'created_at' => (new \DateTime($this->created_at))->format('Y-m-d H:i:s'),
+        'updated_at' => (new \DateTime($this->updated_at))->format('Y-m-d H:i:s'),
+        'likes_count' => $this->likes()->where('type', 'like')->count(),
+        'dislikes_count' => $this->likes()->where('type', 'dislike')->count(),
+        'comments' => $this->comments()->get()->map(function ($comment) {
+            return [
+                'id' => $comment->id,
+                'user_id' => $comment->user_id,
+                'comment' => $comment->comment,
+                'created_at' => $comment->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $comment->updated_at->format('Y-m-d H:i:s'),
+            ];
+        }),
+    ];
+
+    \Log::info('BentoResource Data:', $data); // Log the data
+
+    return $data;
+}
 
 
     /**
@@ -54,7 +58,21 @@ class BentoResource extends JsonResource
      * @return string|null
      */
     private function getImageUrl()
-    {
-        return $this->image_url ? URL::to(Storage::url($this->image_url)) : null;
+{
+    \Log::info('Image URL before processing:', [$this->image_url]);
+
+    if ($this->image_url) {
+        if (Storage::disk('public')->exists($this->image_url)) {
+            \Log::info('File exists: ' . Storage::url($this->image_url));
+            return Storage::url($this->image_url); // Generate URL to the image
+        } else {
+            \Log::error('File not found: ' . $this->image_url); // Log if file doesn't exist
+            return null; // Return null if the file isn't found
+        }
     }
+    return null; // Return null if image_url is not set
+}
+
+
+
 }

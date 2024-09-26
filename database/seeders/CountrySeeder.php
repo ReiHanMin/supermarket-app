@@ -3,10 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Country;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use PHPUnit\Framework\Constraint\Count;
 
 class CountrySeeder extends Seeder
 {
@@ -17,19 +14,24 @@ class CountrySeeder extends Seeder
      */
     public function run()
     {
-        $usaStates = [
-            "AL" => 'Alabama',
-            "AK" => 'Alaska',
-            "AZ" => 'Arizona',
-            "AR" => 'Arkansas',
-            "CA" => 'California',
-        ];
         $countries = [
             ['code' => 'geo', 'name' => 'Georgia', 'states' => null],
             ['code' => 'ind', 'name' => 'India', 'states' => null],
-            ['code' => 'usa', 'name' => 'United States of America', 'states' => json_encode($usaStates)],
-            ['code' => 'ger', 'name' => 'Germany', 'states' => null],
+            ['code' => 'usa', 'name' => 'United States of America', 'states' => json_encode([
+                'AL' => 'Alabama',
+                'AK' => 'Alaska',
+                'AZ' => 'Arizona',
+                'AR' => 'Arkansas',
+                'CA' => 'California'
+            ])],
+            ['code' => 'ger', 'name' => 'Germany', 'states' => null]
         ];
-        Country::insert($countries);
+
+        foreach ($countries as $country) {
+            Country::updateOrCreate(
+                ['code' => $country['code']], // Condition to check for existence
+                ['name' => $country['name'], 'states' => $country['states']] // Data to insert or update
+            );
+        }
     }
 }

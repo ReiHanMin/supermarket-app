@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Api\BentoController;
+use App\Http\Controllers\Api\StoreController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -21,13 +22,22 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
+
 // Routes that require authentication
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/user', [\App\Http\Controllers\Api\AuthController::class, 'getUser']);
     Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
-
+    Route::get('/stores', [StoreController::class, 'index']); // Fetch all stores
+    Route::post('/stores', [StoreController::class, 'store']); // Create a new store
+    Route::get('/stores/{id}', [StoreController::class, 'show']); // Get a store by ID
+    Route::put('/stores/{id}', [StoreController::class, 'update']); // Update a store
+    Route::delete('/stores/{id}', [StoreController::class, 'destroy']); // Delete a store
     Route::get('bentos/{bento}', [BentoController::class, 'show']);
+    Route::post('/bentos/batch', [BentoController::class, 'storeBatch']);
+    Route::put('bentos/{bento}', [BentoController::class, 'update']);
     Route::get('/dashboard/recent-stores', [DashboardController::class, 'recentStores']);
+    Route::get('/dashboard/user-feedback', [DashboardController::class, 'getUserFeedback']);
     Route::apiResource('users', UserController::class);
     Route::apiResource('customers', CustomerController::class);
     Route::apiResource('categories', CategoryController::class)->except('show');
@@ -43,6 +53,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/dashboard/bentos-count', [DashboardController::class, 'activeBentos']);
     Route::get('/dashboard/stores-count', [DashboardController::class, 'activeStores']);
     Route::get('/dashboard/reviews-count', [DashboardController::class, 'activeReviews']);
+    Route::get('/bentos', [BentoController::class, 'index']);
     Route::get('/dashboard/recent-bentos', [DashboardController::class, 'recentBentos']);
     Route::get('/dashboard/income-amount', [DashboardController::class, 'totalIncome']);
     Route::get('/dashboard/orders-by-country', [DashboardController::class, 'ordersByCountry']);
@@ -64,3 +75,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 // Publicly accessible routes
 
 Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
+
+Route::options('{any}', function () {
+    return response()->json([], 200);
+})->where('any', '.*');
