@@ -8,7 +8,12 @@
     <!-- Display the Bento details when data is loaded -->
     <div v-else>
       <div class="mb-4">
-        <img :src="bento.image_url" alt="Bento Image" class="w-20 h-20 object-cover rounded" />
+       <img
+            v-if="bento.image_url"
+            class="w-16 h-16 object-cover"
+            :src="getPhotoUrl(bento.image_url)"
+            :alt="bento.name"
+          />
         <h2 class="text-xl font-bold">{{ bento.name }}</h2>
         <p class="text-gray-600">Price: ¥{{ bento.original_price }}</p>
         <p class="text-gray-600">Discounted Price: ¥{{ bento.usual_discounted_price }}</p> 
@@ -72,6 +77,9 @@ function fetchStoreDetails(storeId) {
     });
 }
 
+function getPhotoUrl(imageUrl) {
+  return `${import.meta.env.VITE_API_BASE_URL}${imageUrl}`; // For Vite
+}
 
 </script>
 

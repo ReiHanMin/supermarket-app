@@ -61,8 +61,8 @@ export function setBentosData(state, response) {
       rating: bento.rating,
       reviews_count: bento.reviews_count,
       store_id: bento.store_id,
-      store_name: bento.store_name, // Added store name
-      chain_name: bento.chain_name, // Added chain name
+      store_name: bento.store_name, // Store-specific fields added
+      chain_name: bento.chain_name, // Chain-specific fields added
       created_at: bento.created_at,
       updated_at: bento.updated_at,
     })),
@@ -75,13 +75,18 @@ export function setBentosData(state, response) {
 }
 
 
-export function setStores(state, [loading, stores = null]) {
-  state.stores.loading = loading;
-  if (stores) {
-    state.stores.data = stores.data || [];
-    state.stores.meta = stores.meta || {};
+
+export function setStores(state, [loading, stores = {}]) {
+  state.stores.loading = loading;  // Always update the loading state
+  
+  // Update stores data only when stores are passed
+  if (stores && Object.keys(stores).length) {
+    console.log("Stores data:", stores.data); // Add this line
+    state.stores.data = stores.data || [];  // Default to an empty array if no data
+    state.stores.meta = stores.meta || {};  // Default to an empty object for meta
   }
 }
+
 
 export function setStore(state, store) {
   state.store = store;

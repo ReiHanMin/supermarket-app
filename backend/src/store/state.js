@@ -14,18 +14,20 @@ export default {
     total: null
   },
   bentos: {
-    loading: false,
-    data: [],
+    loading: false,       // Track loading state while fetching bentos
+    data: [],             // Bento list data
+    selectedBento: null,  // To hold data for a specific bento when editing/updating
     total: 0,
     from: 0,
     to: 0,
     limit: 20,
     links: []
   },
-    stores: {
-      data: [],
-      total: 0,
-    },
+  stores: {
+    loading: false,      // Track loading state while fetching stores
+    data: [],            // Store list data
+    total: 0,
+  },
   users: {
     loading: false,
     data: [],

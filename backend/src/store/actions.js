@@ -121,10 +121,13 @@ export function deleteProduct({ commit }, id) {
   return axiosClient.delete(`/products/${id}`);
 }
 
-export async function getBentos({ commit }, params) {
+export async function getBentos({ commit }, { storeId, ...params }) {
   commit("setBentosLoading", true);
   try {
-    const response = await axiosClient.get("/bentos", { params });
+    const response = await axiosClient.get(`/bentos`, {
+      params: { store_id: storeId, ...params } // Make sure store_id is sent
+    });
+    console.log("This is the response: ", response)
     commit("setBentosData", response.data); // Handle the response in Vuex
   } catch (error) {
     console.error("Error fetching bentos:", error);
@@ -132,6 +135,7 @@ export async function getBentos({ commit }, params) {
     commit("setBentosLoading", false);
   }
 }
+
 
 
 export async function getStores({ commit }, params) {
@@ -188,6 +192,14 @@ export async function createStore({ commit }, storeData) {
   }
 }
 
+export async function updateBentoDynamicFields({ commit }, { bentoId, dynamicFields }) {
+  try {
+    const response = await axiosClient.post(`/bentos/${bentoId}/update-dynamic`, dynamicFields);
+    console.log("Bento dynamic fields updated:", response.data);
+  } catch (error) {
+    console.error("Error updating bento dynamic fields:", error);
+  }
+}
 
 
 

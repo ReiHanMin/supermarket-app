@@ -8,6 +8,7 @@ use App\Http\Requests\BentoRequest;
 use App\Http\Resources\BentoListResource;
 use App\Http\Resources\BentoResource;
 use App\Models\Bento;
+use App\Models\BentoUpdate;
 use App\Models\BentoCategory;
 use App\Models\BentoImage;
 use App\Models\Like;
@@ -133,57 +134,89 @@ class BentoController extends Controller
     
 
 
-    
-
-    
-
-    
-
-    
-
-
     public function show(Bento $bento)
     {
         $bento->load(['stores', 'relatedItems', 'reviews']); // Eager load relationships
         return new BentoResource($bento);
     }
 
-   
+    public function getBentos(Request $request)
+{
+    $storeId = $request->query('store_id');
+    \Log::info('Received Store ID: ' . $storeId);  // Log the store_id received
 
-   
-    public function update(BentoRequest $request, Bento $bento)
-    {
-        \Log::info('Update Request Raw Data:', $request->all());  // Log incoming data for debugging
-        
-        // Loop through each bento in the request and update the relevant record
-        foreach ($request->input('bentos') as $bentoData) {
-            // Update the bento with validated data
-            $bento->update([
-                'name' => $bentoData['name'],
-                'original_price' => $bentoData['original_price'],
-                'usual_discounted_price' => $bentoData['usual_discounted_price'],
-                'discount_percentage' => $bentoData['discount_percentage'],
-                'stock_message' => $bentoData['stock_message'] ?? null,
-                'calories' => $bentoData['calories'] ?? null,
-                'description' => $bentoData['description'] ?? null,
-                'availability' => $bentoData['availability'],
-                'store_id' => $bentoData['store_id'],
-            ]);
-    
-            // If there is an image, handle image upload logic
-            if (!empty($bentoData['image_url'])) {
-                // Example: save the image and update the bento with the new image path
-                $bento->image_url = $bentoData['image_url'];
-                $bento->save();
-            }
-        }
-    
-        \Log::info('Updated Bento Data:', $bento->toArray());  // Log the updated bento data
-    
-        return response()->json(['message' => 'Bento updated successfully!']);
+    if ($storeId) {
+        // Filter bentos by store_id
+        $bentos = Bento::where('store_id', $storeId)->get();
+        \Log::info('Bentos found for Store ID ' . $storeId . ': ' . $bentos->count());  // Log the count of filtered bentos
+    } else {
+        // If no store_id is provided, return all bentos
+        $bentos = Bento::all();
+        \Log::info('Returning all bentos');
     }
+
+    return response()->json($bentos);
+}
+
     
 
+public function update(BentoRequest $request, Bento $bento)
+{
+    \Log::info('Update Request Raw Data:', $request->all());  // Log incoming data for debugging
+
+    // Loop through each bento in the request and update the relevant record
+    foreach ($request->input('bentos') as $bentoData) {
+        $bento->update([
+            'name' => $bentoData['name'],  // Static field: name
+            'original_price' => $bentoData['original_price'],  // Static field: original_price
+            'calories' => $bentoData['calories'],  // Static field: calories
+            'description' => $bentoData['description'],  // Static field: description
+            'availability' => $bentoData['availability'],  // Dynamic field: availability
+            'usual_discounted_price' => $bentoData['usual_discounted_price'],
+            'discount_percentage' => $bentoData['discount_percentage'],
+            'stock_message' => $bentoData['stock_message'] ?? null,
+            'store_id' => $bentoData['store_id'],  // Ensure the correct store_id is updated
+        ]);
+
+        // Handle image upload if provided
+        if (!empty($bentoData['image_url'])) {
+            $bento->image_url = $bentoData['image_url'];
+            $bento->save();
+        }
+    }
+
+    \Log::info('Updated Bento Data:', $bento->toArray());  // Log the updated bento data
+
+    return response()->json(['message' => 'Bento updated successfully!']);
+}
+
+   
+    
+    
+
+    public function storeUpdate(Request $request, $bentoId)
+{
+    // Validate the incoming request
+    $validatedData = $request->validate([
+        'discounted_price' => 'required|numeric',
+        'discount_percentage' => 'required|numeric',
+        'stock_message' => 'nullable|string',
+        'availability' => 'nullable|string',
+        'visit_time' => 'required|date',
+    ]);
+
+    // Create a new update entry in the BentoUpdates table
+    $bentoUpdate = new BentoUpdate();
+    $bentoUpdate->bento_id = $bentoId;
+    $bentoUpdate->discounted_price = $validatedData['discounted_price'];
+    $bentoUpdate->discount_percentage = $validatedData['discount_percentage'];
+    $bentoUpdate->stock_message = $validatedData['stock_message'];
+    $bentoUpdate->availability = $validatedData['availability'];
+    $bentoUpdate->visit_time = $validatedData['visit_time'];
+    $bentoUpdate->save();
+
+    return response()->json(['message' => 'Bento updated successfully']);
+}
 
 
     

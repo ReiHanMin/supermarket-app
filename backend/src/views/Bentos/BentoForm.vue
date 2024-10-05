@@ -19,25 +19,22 @@
       <div v-for="(bento, index) in bentos" :key="index" class="bento-entry">
 
         <!-- Upload Image -->
-      <div class="file-upload">
-        <label for="image_url" class="file-label">Upload Image</label>
-
-        <!-- Display existing or newly uploaded image if available -->
-        <div v-if="bento.image_url">
-          <img :src="bento.image_url" alt="Current Image" class="uploaded-image-preview" />
+        <div class="file-upload">
+          <label for="image_url" class="file-label">Upload Image</label>
           
-          <!-- Button to delete current image -->
-          <button type="button" class="btn btn-danger delete-image-button" @click="deleteCurrentImage(index)">
-            Delete Current Image
-          </button>
+          <!-- Display existing or newly uploaded image if available -->
+          <div v-if="bento.image_url">
+            <img :src="bento.image_url" alt="Current Image" class="uploaded-image-preview" />
+            <!-- Button to delete current image -->
+            <button type="button" class="btn btn-danger delete-image-button" @click="deleteCurrentImage(index)">
+              Delete Current Image
+            </button>
+          </div>
+          
+          <!-- Show file input only if there is no image or the current image has been deleted -->
+          <input v-if="!bento.image_url" type="file" class="file-input" @change="(event) => handleImageUpload(event, index)" />
         </div>
 
-        <!-- Show file input only if there is no image or the current image has been deleted -->
-        <input v-if="!bento.image_url" type="file" class="file-input" @change="(event) => handleImageUpload(event, index)" />
-      </div>
-
-
-        
         <!-- Bento Name and Prices -->
         <CustomInput v-model="bento.name" label="Bento Name" :error="errors[index]?.name" />
         <CustomInput v-model="bento.original_price" label="Original Price" type="number" prepend="¥" :error="errors[index]?.original_price" />
@@ -63,11 +60,24 @@
         <CustomInput v-model="bento.description" label="Description" :error="errors[index]?.description" />
       </div>
 
-      <!-- Add Another Bento Button -->
-      <button @click="addBento" class="btn btn-secondary">Add Another Bento</button>
+      <!-- Visit Time Field -->
+      <div class="form-group mt-4">
+        <label for="visit-time">Visit Date & Time</label>
+        <input
+          id="visit-time"
+          type="datetime-local"
+          v-model="visitTime"
+          class="form-control"
+        />
+      </div>
 
-      <!-- Submit Button -->
-      <button @click="saveBentos" :disabled="isSubmitting || !selectedStore" class="btn btn-primary">Save Bentos</button>
+      <!-- Add Another Bento Button -->
+      <button @click="addBento" class="btn btn-secondary mt-4">Add Another Bento</button>
+
+      <!-- Save Button -->
+      <button @click="confirmSave" :disabled="isSubmitting || !selectedStore" class="btn btn-primary mt-4">
+        Save Bentos
+      </button>
     </div>
   </div>
 </template>
@@ -78,7 +88,7 @@ import axiosClient from '../../axios.js';
 import Treeselect from 'vue3-treeselect';
 import 'vue3-treeselect/dist/vue3-treeselect.css';
 import CustomInput from '../../components/core/CustomInput.vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const selectedStore = ref(null);
 const storeOptions = ref([]);
@@ -98,7 +108,9 @@ const errors = ref([]);
 const isSubmitting = ref(false);
 const uploadedImages = ref([]); // Used to store uploaded images
 const formMode = ref('Create'); // Default mode is create
+const visitTime = ref(null); // Store visit time
 const route = useRoute(); // Get the current route
+const router = useRouter(); // Define the router hook
 
 // If editing, fetch the bento data to prefill the form
 onMounted(() => {
@@ -122,7 +134,6 @@ function handleImageUpload(event, index) {
   }
 }
 
-
 // Handle deleting the current image
 function deleteCurrentImage(index) {
   bentos.value[index].image_url = null;  // Remove the image URL from the bento (either preloaded or newly uploaded)
@@ -135,7 +146,6 @@ function deleteCurrentImage(index) {
     bentos.value[index].temp_url = null;
   }
 }
-
 
 // Fetch stores for the dropdown
 function fetchStores() {
@@ -165,7 +175,15 @@ function fetchBento(id) {
   axiosClient.get(`/bentos/${id}`)
     .then(response => {
       const bentoData = response.data;
-      bentos.value = [bentoData]; // Prepopulate the form with the fetched bento data
+      
+      // Prepopulate the form with the fetched bento data
+      bentos.value = [bentoData]; 
+
+      // Ensure the image URL has the correct base URL
+      if (bentoData.image_url && !bentoData.image_url.startsWith('http')) {
+        const baseUrl = `${import.meta.env.VITE_API_BASE_URL}`;  // Ensure the correct base URL
+        bentoData.image_url = `${baseUrl}${bentoData.image_url}`;  // Append base URL if needed
+      }
 
       // Find and set the store in storeOptions based on store_id
       if (bentoData.store_id) {
@@ -184,6 +202,15 @@ function fetchBento(id) {
 }
 
 
+// Handle saving the bento(s) with confirmation
+function confirmSave() {
+  if (confirm('Are you sure you want to save the bentos?')) {
+    saveBentos();
+  }
+}
+
+// Save bento updates
+// Handle saving the bento(s)
 // Handle saving the bento(s)
 function saveBentos() {
   isSubmitting.value = true;
@@ -229,6 +256,10 @@ function saveBentos() {
     axiosClient.post(`/bentos/${route.params.id}`, formData, { headers })
       .then(() => {
         alert('Bento updated successfully');
+        resetForm();
+
+        // Redirect to the bentos page
+        router.push({ name: 'app.bentos' });  // Ensure you use the correct route name
       })
       .catch(error => {
         if (error.response && error.response.status === 422) {
@@ -248,6 +279,9 @@ function saveBentos() {
       .then(response => {
         alert('Bentos saved successfully');
         resetForm();
+
+        // Redirect to the bentos page
+        router.push({ name: 'app.bentos' });  // Ensure you use the correct route name
       })
       .catch(err => {
         console.error('Error saving bentos', err);
@@ -257,6 +291,8 @@ function saveBentos() {
       });
   }
 }
+
+
 
 
 // Add another bento entry
@@ -305,6 +341,7 @@ function resetForm() {
     availability: 'Many'
   }];
   selectedStore.value = null;
+  visitTime.value = null; // Reset visit time
   errors.value = [];
   uploadedImages.value = [];
 }
@@ -389,6 +426,4 @@ button {
 .delete-image-button:hover {
   background-color: #c82333;
 }
-
-
 </style>
