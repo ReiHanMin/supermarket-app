@@ -15,7 +15,7 @@
         }
     </style>
 </head>
-<body>
+<body class="bg-orange-50">
 @include('layouts.navigation')
 
 <main class="p-5">

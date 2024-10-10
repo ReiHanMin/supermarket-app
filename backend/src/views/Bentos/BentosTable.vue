@@ -145,6 +145,7 @@ const visitTime = ref("");  // Store visit time
 
 // Computed state for bentos data from Vuex store
 const bentos = computed(() => store.state.bentos);
+const selectedStore = ref(null);  // Store the selected store ID
 
 // On component mount, fetch the bentos data
 onMounted(() => {
@@ -210,6 +211,7 @@ function formatCurrency(value) {
 // Function to fetch bentos for the selected store
 function fetchBentosForStore(storeId) {
   console.log('Selected Store ID:', storeId); // Debugging line
+    selectedStore.value = storeId;  // Save the selected store ID
   store.dispatch('getBentos', { storeId }).then(() => {
     console.log('Fetched bentos for store:', storeId);
   });
@@ -227,10 +229,13 @@ function confirmSave() {
   }
 }
 
-// Function to save all bento updates with visit time
-// Function to save all bento updates with visit time
+// Function to save all bento updates with visit time and store_id
 function saveBentoUpdates() {
-  // Confirmation prompt before saving
+  if (!selectedStore.value) {
+    alert('Please select a store before saving.');
+    return;  // Exit if no store is selected
+  }
+
   if (!confirm('Are you sure you want to save the bento updates?')) {
     return; // Exit if the admin cancels
   }
@@ -244,14 +249,28 @@ function saveBentoUpdates() {
   // Send each updated bento to the backend via Axios
   updatedBentos.forEach(async (bento) => {
     try {
-      await axiosClient.post(`/bentos/${bento.id}/update-dynamic`, {
+      // First, update the bento_store table with the current store-specific details
+      await axiosClient.put(`/bentos/${bento.id}/update-dynamic`, { 
+        store_id: selectedStore.value,  // Use the selected store ID here
+        discounted_price: bento.usual_discounted_price,  // Update the discounted price
+        discount_percentage: bento.discount_percentage,  // Update the discount percentage
+        stock_message: bento.stock_message,  // Update the stock message
+        availability: bento.availability,  // Update the availability status
+        visit_time: bento.visit_time  // Update the visit time
+      });
+
+      // Next, log this update into the bento_updates table
+      await axiosClient.post(`/bento-updates`, {
+        bento_id: bento.id,
+        store_id: selectedStore.value,  // Use the selected store ID here as well
         discounted_price: bento.usual_discounted_price,
         discount_percentage: bento.discount_percentage,
         stock_message: bento.stock_message,
         availability: bento.availability,
         visit_time: bento.visit_time
       });
-      console.log(`Bento ID ${bento.id} updated successfully.`);
+
+      console.log(`Bento ID ${bento.id} updated successfully for store ${selectedStore.value}.`);
     } catch (error) {
       console.error(`Failed to update bento ID ${bento.id}:`, error);
     }
@@ -260,6 +279,10 @@ function saveBentoUpdates() {
   // Show a success message after all updates are completed
   alert('All bento updates have been saved successfully!');
 }
+
+
+
+
 
 </script>
 

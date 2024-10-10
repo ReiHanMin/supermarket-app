@@ -49,7 +49,7 @@
   </div>
 
   <div class="grid grid-rows-1 md:grid-rows-2 md:grid-flow-col grid-cols-1 md:grid-cols-3 gap-3">
-    <!-- Recent Bentos Updates -->
+
     <!-- Recent Bentos Updates -->
 <div class="col-span-1 md:col-span-2 row-span-1 md:row-span-2 bg-white py-6 px-5 rounded-lg shadow">
     <label class="text-lg font-semibold block mb-2">Recent Bentos Updates</label>

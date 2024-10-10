@@ -64,28 +64,30 @@ class DashboardController extends Controller
         $sortField = $request->input('sort_field', 'created_at');
         $sortDirection = $request->input('sort_direction', 'desc');
 
-        // Fetch the most recent bentos with updated fields
+        // Fetch the most recent bentos with updated fields, including image_url
         $query = Bento::select(
-                'bentos.id',
-                'bentos.name',
-                'bentos.description',
-                'bentos.original_price',
-                'bentos.usual_discount_percentage',
-                'bentos.usual_discounted_price',
-                'bentos.estimated_discount_time',
-                'bentos.stock_message',
-                'bentos.calories',
-                'bentos.discount_percentage',
-                'bentos.availability',
-                'bentos.store_id',
-                'bentos.created_at',
-                'bentos.updated_at',
-                'stores.name as store_name',
-                'stores.chain_name'
-            )
-            ->leftJoin('stores', 'bentos.store_id', '=', 'stores.id')
-            ->where('bentos.name', 'like', "%{$search}%")
-            ->orderBy($sortField, $sortDirection);
+                    'bentos.id',
+                    'bentos.name',
+                    'bentos.description',
+                    'bentos.original_price',
+                    'bentos.usual_discount_percentage',
+                    'bentos.usual_discounted_price',
+                    'bentos.estimated_discount_time',
+                    'bentos.stock_message',
+                    'bentos.calories',
+                    'bentos.discount_percentage',
+                    'bentos.availability',
+                    'bentos.created_at',
+                    'bentos.updated_at',
+                    'bentos.image_url',  // Include image_url here
+                    'stores.name as store_name',
+                    'stores.chain_name'
+                )
+                // Join bento_store to link bentos with specific stores
+                ->leftJoin('bento_store', 'bentos.id', '=', 'bento_store.bento_id')
+                ->leftJoin('stores', 'bento_store.store_id', '=', 'stores.id')  // Join stores via bento_store
+                ->where('bentos.name', 'like', "%{$search}%")
+                ->orderBy($sortField, $sortDirection);
 
         $recentBentos = $query->paginate($perPage);
 
@@ -103,6 +105,8 @@ class DashboardController extends Controller
         return response()->json(['error' => 'Unable to fetch recent bentos'], 500);
     }
 }
+
+    
 
 
     public function getUserFeedback()

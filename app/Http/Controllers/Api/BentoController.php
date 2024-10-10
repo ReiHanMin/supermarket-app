@@ -8,9 +8,11 @@ use App\Http\Requests\BentoRequest;
 use App\Http\Resources\BentoListResource;
 use App\Http\Resources\BentoResource;
 use App\Models\Bento;
+use App\Models\Store;
 use App\Models\BentoUpdate;
 use App\Models\BentoCategory;
 use App\Models\BentoImage;
+use App\Models\BentoStore;
 use App\Models\Like;
 use App\Models\Comment;
 use Illuminate\Http\Request;
@@ -18,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Exception;
 use Illuminate\Validation\ValidationException;
 
@@ -73,44 +76,188 @@ class BentoController extends Controller
     }
 
     public function storeBatch(Request $request)
-{
-    // Validate the fields coming from the form
-    $validator = Validator::make($request->all(), [
-        'bentos.*.name' => 'required|string|max:255',
-        'bentos.*.original_price' => 'required|numeric',
-        'bentos.*.usual_discounted_price' => 'required|numeric',
-        'bentos.*.calories' => 'nullable|numeric',
-        'bentos.*.description' => 'required|string',
-        'bentos.*.image_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        'bentos.*.stock_message' => 'nullable|string|max:255',
-        'bentos.*.availability' => 'required|string|in:Many,A few left,Sold out',
-        'bentos.*.store_id' => 'required|exists:stores,id',
-    ]);
+    {
+        // Validate the fields coming from the form, including store_id validation
+        $validator = Validator::make($request->all(), [
+            'bentos.*.name' => 'required|string|max:255',
+            'bentos.*.original_price' => 'required|numeric',
+            'bentos.*.usual_discounted_price' => 'required|numeric',
+            'bentos.*.calories' => 'nullable|numeric',
+            'bentos.*.description' => 'required|string',
+            'bentos.*.image_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'bentos.*.stock_message' => 'nullable|string|max:255',
+            'bentos.*.availability' => 'required|string|in:Many,A few left,Sold out',
+            'bentos.*.discount_percentage' => 'nullable|numeric',
+            'bentos.*.store_id' => 'required|exists:stores,id',  // Validate that store_id is required and must exist in stores table
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+    
+        // Loop through each bento input and save the data
+        foreach ($request->input('bentos') as $index => $bentoData) {
+            // Check if the bento already exists in the bentos table
+            $existingBento = Bento::where('name', $bentoData['name'])->first();
+    
+            if (!$existingBento) {
+                // If the bento doesn't exist, create a new record in the bentos table
+                $bento = new Bento();
+                $bento->name = $bentoData['name'];
+                $bento->original_price = $bentoData['original_price'];
+                $bento->calories = $bentoData['calories'] ?? null;
+                $bento->description = $bentoData['description'];
+                $bento->availability = $bentoData['availability']; // Save the availability field
+                $bento->stock_message = $bentoData['stock_message'] ?? null; // Save stock message
+                $bento->usual_discounted_price = $bentoData['usual_discounted_price'] ?? null; // Save discounted price
+                $bento->discount_percentage = $bentoData['discount_percentage'] ?? null; // Save discount percentage
+    
+                // Handle image upload if it exists
+                if ($request->hasFile('bentos.' . $index . '.image_url')) {
+                    $image = $request->file('bentos.' . $index . '.image_url');
+                    $imageName = time() . '_' . $image->getClientOriginalName();
+                    $image->storeAs('public/images', $imageName);
+                    $bento->image_url = 'images/' . $imageName;
+                }
+    
+                // Save the new bento to the bentos table
+                $bento->save();
+            } else {
+                // Use the existing bento record
+                $bento = $existingBento;
+    
+                // Update existing bento with new data
+                $bento->update([
+                    'original_price' => $bentoData['original_price'],
+                    'calories' => $bentoData['calories'] ?? null,
+                    'description' => $bentoData['description'],
+                    'availability' => $bentoData['availability'],
+                    'stock_message' => $bentoData['stock_message'] ?? null,
+                    'usual_discounted_price' => $bentoData['usual_discounted_price'] ?? null,
+                    'discount_percentage' => $bentoData['discount_percentage'] ?? null,
+                ]);
+            }
+    
+            // Map availability to stock_level
+            $stockLevel = $bentoData['availability'];  // Directly assign the string value
+    
+            // Check if the bento-store relationship already exists in bento_store
+            $bentoStoreExists = BentoStore::where('bento_id', $bento->id)
+                                          ->where('store_id', $bentoData['store_id'])
+                                          ->exists();
+    
+            if (!$bentoStoreExists) {
+                // Save store-specific data in the bento_store table
+                BentoStore::create([
+                    'bento_id' => $bento->id,
+                    'store_id' => $bentoData['store_id'],
+                    'current_discount' => $bentoData['discount_percentage'] ?? null, // Store-specific discount
+                    'stock_level' => $stockLevel,  // Directly map stock_level to availability
+                ]);
+            }
+        }
+    
+        return response()->json(['message' => 'Bentos saved successfully'], 201);
+    }
+    
 
-    if ($validator->fails()) {
-        return response()->json(['errors' => $validator->errors()], 422);
+    
+
+    
+
+    
+public function checkBentoExists(Request $request) {
+    $name = $request->query('name');
+    $store_id = $request->query('store_id');
+
+    // Check if a bento with this name exists in the `bentos` table
+    $bento = Bento::where('name', $name)->first();
+
+    if ($bento) {
+        // Check if this bento is already linked to the same store in `bento_store` table
+        $bentoStore = BentoStore::where('bento_id', $bento->id)
+                                ->where('store_id', $store_id)
+                                ->exists();
+
+        if ($bentoStore) {
+            // Bento exists in the same store
+            return response()->json(['exists_in_same_store' => true, 'bento_id' => $bento->id]);
+        } else {
+            // Bento exists but not for this store
+            return response()->json(['exists_in_other_store' => true, 'bento_id' => $bento->id]);
+        }
     }
 
-    // Loop through each bento input and save the data
+    return response()->json(['exists' => false]);
+}
+
+
+
+
+
+
+public function show($id)
+{
+    // Fetch the bento with the corresponding id
+    $bento = Bento::findOrFail($id);
+
+    // Fetch the associated store data from the bento_store table
+    $bentoStore = BentoStore::where('bento_id', $id)->first();
+
+    // If there is an associated store, include the store_id in the response
+    if ($bentoStore) {
+        $bento->store_id = $bentoStore->store_id;
+        $bento->current_discount = $bentoStore->current_discount;
+        $bento->stock_level = $bentoStore->stock_level;
+    }
+
+    return response()->json($bento);
+}
+
+
+public function getBentos(Request $request)
+{
+    $storeId = $request->query('store_id');
+    \Log::info('Received Store ID: ' . $storeId);  // Log the store_id received
+
+    if ($storeId) {
+        // Fetch bentos that are linked to the selected store using the bento_store table
+        $bentos = DB::table('bentos')
+                    ->join('bento_store', 'bentos.id', '=', 'bento_store.bento_id')
+                    ->where('bento_store.store_id', $storeId)
+                    ->select('bentos.*')  // Select only bento fields from bentos table
+                    ->get();
+                    
+        \Log::info('Bentos found for Store ID ' . $storeId . ': ' . $bentos->count());  // Log the count of filtered bentos
+    } else {
+        // If no store_id is provided, return all bentos
+        $bentos = Bento::all();
+        \Log::info('Returning all bentos');
+    }
+
+    return response()->json($bentos);
+}
+
+
+    
+
+public function update(BentoRequest $request, Bento $bento)
+{
+    \Log::info('Update Request Raw Data:', $request->all());  // Log incoming data for debugging
+
+    // Loop through each bento in the request, including the index
     foreach ($request->input('bentos') as $index => $bentoData) {
-        // Create a new Bento instance
-        $bento = new Bento();
-        $bento->name = $bentoData['name'];
-        $bento->original_price = $bentoData['original_price'];
-        $bento->usual_discounted_price = $bentoData['usual_discounted_price'];
-
-        // Automatically calculate discount percentage if original price and discounted price are provided
-        if (!empty($bentoData['original_price']) && !empty($bentoData['usual_discounted_price'])) {
-            $bento->discount_percentage = round(((float)$bentoData['original_price'] - (float)$bentoData['usual_discounted_price']) / (float)$bentoData['original_price'] * 100, 2);
-        } else {
-            $bento->discount_percentage = null;
-        }
-
-        $bento->calories = $bentoData['calories'] ?? null;
-        $bento->description = $bentoData['description'];
-        $bento->stock_message = $bentoData['stock_message'] ?? null;
-        $bento->availability = $bentoData['availability'];
-        $bento->store_id = $bentoData['store_id'];
+        // Update the bento details
+        $bento->update([
+            'name' => $bentoData['name'],  
+            'original_price' => $bentoData['original_price'],  
+            'calories' => $bentoData['calories'],  
+            'description' => $bentoData['description'],  
+            'availability' => $bentoData['availability'],  
+            'usual_discounted_price' => $bentoData['usual_discounted_price'],
+            'discount_percentage' => $bentoData['discount_percentage'],
+            'stock_message' => $bentoData['stock_message'] ?? null,
+        ]);
 
         // Handle image upload if it exists
         if ($request->hasFile('bentos.' . $index . '.image_url')) {
@@ -122,66 +269,7 @@ class BentoController extends Controller
 
             // Save only the relative path to the database
             $bento->image_url = 'images/' . $imageName;
-        }
-
-        // Save the bento data to the database
-        $bento->save();
-    }
-
-    return response()->json(['message' => 'Bentos saved successfully'], 201);
-}
-
-    
-
-
-    public function show(Bento $bento)
-    {
-        $bento->load(['stores', 'relatedItems', 'reviews']); // Eager load relationships
-        return new BentoResource($bento);
-    }
-
-    public function getBentos(Request $request)
-{
-    $storeId = $request->query('store_id');
-    \Log::info('Received Store ID: ' . $storeId);  // Log the store_id received
-
-    if ($storeId) {
-        // Filter bentos by store_id
-        $bentos = Bento::where('store_id', $storeId)->get();
-        \Log::info('Bentos found for Store ID ' . $storeId . ': ' . $bentos->count());  // Log the count of filtered bentos
-    } else {
-        // If no store_id is provided, return all bentos
-        $bentos = Bento::all();
-        \Log::info('Returning all bentos');
-    }
-
-    return response()->json($bentos);
-}
-
-    
-
-public function update(BentoRequest $request, Bento $bento)
-{
-    \Log::info('Update Request Raw Data:', $request->all());  // Log incoming data for debugging
-
-    // Loop through each bento in the request and update the relevant record
-    foreach ($request->input('bentos') as $bentoData) {
-        $bento->update([
-            'name' => $bentoData['name'],  // Static field: name
-            'original_price' => $bentoData['original_price'],  // Static field: original_price
-            'calories' => $bentoData['calories'],  // Static field: calories
-            'description' => $bentoData['description'],  // Static field: description
-            'availability' => $bentoData['availability'],  // Dynamic field: availability
-            'usual_discounted_price' => $bentoData['usual_discounted_price'],
-            'discount_percentage' => $bentoData['discount_percentage'],
-            'stock_message' => $bentoData['stock_message'] ?? null,
-            'store_id' => $bentoData['store_id'],  // Ensure the correct store_id is updated
-        ]);
-
-        // Handle image upload if provided
-        if (!empty($bentoData['image_url'])) {
-            $bento->image_url = $bentoData['image_url'];
-            $bento->save();
+            $bento->save();  // Save the updated bento with the new image URL
         }
     }
 
@@ -190,14 +278,16 @@ public function update(BentoRequest $request, Bento $bento)
     return response()->json(['message' => 'Bento updated successfully!']);
 }
 
+
    
     
     
 
-    public function storeUpdate(Request $request, $bentoId)
+public function storeUpdate(Request $request, $bentoId)
 {
     // Validate the incoming request
     $validatedData = $request->validate([
+        'store_id' => 'required|exists:stores,id', // Validate that store_id is required and must exist in stores table
         'discounted_price' => 'required|numeric',
         'discount_percentage' => 'required|numeric',
         'stock_message' => 'nullable|string',
@@ -205,128 +295,78 @@ public function update(BentoRequest $request, Bento $bento)
         'visit_time' => 'required|date',
     ]);
 
-    // Create a new update entry in the BentoUpdates table
-    $bentoUpdate = new BentoUpdate();
-    $bentoUpdate->bento_id = $bentoId;
-    $bentoUpdate->discounted_price = $validatedData['discounted_price'];
-    $bentoUpdate->discount_percentage = $validatedData['discount_percentage'];
-    $bentoUpdate->stock_message = $validatedData['stock_message'];
-    $bentoUpdate->availability = $validatedData['availability'];
-    $bentoUpdate->visit_time = $validatedData['visit_time'];
-    $bentoUpdate->save();
+    // Update the bento_store table for the current store-bento relationship
+    $bentoStore = BentoStore::where('bento_id', $bentoId)
+                            ->where('store_id', $validatedData['store_id'])
+                            ->first();
+
+    if ($bentoStore) {
+        // Update the current values in the bento_store table
+        $bentoStore->update([
+            'current_discount' => $validatedData['discount_percentage'],
+            'stock_level' => $validatedData['availability'],
+            'visit_time' => $validatedData['visit_time'],
+            'stock_message' => $validatedData['stock_message']
+        ]);
+    } else {
+        // If no entry exists in bento_store, create one (fallback case)
+        BentoStore::create([
+            'bento_id' => $bentoId,
+            'store_id' => $validatedData['store_id'],
+            'current_discount' => $validatedData['discount_percentage'],
+            'stock_level' => $validatedData['availability'],
+            'visit_time' => $validatedData['visit_time'],
+            'stock_message' => $validatedData['stock_message']
+        ]);
+    }
+
+    // Log the update in the BentoUpdates table
+    BentoUpdate::create([
+        'bento_id' => $bentoId,
+        'store_id' => $validatedData['store_id'], // Set the store ID
+        'discounted_price' => $validatedData['discounted_price'],
+        'discount_percentage' => $validatedData['discount_percentage'],
+        'stock_message' => $validatedData['stock_message'],
+        'availability' => $validatedData['availability'],
+        'visit_time' => $validatedData['visit_time'],
+    ]);
 
     return response()->json(['message' => 'Bento updated successfully']);
 }
 
+public function logUpdate(Request $request)
+{
+    // Validate the incoming request
+    $validatedData = $request->validate([
+        'bento_id' => 'required|exists:bentos,id',
+        'store_id' => 'required|exists:stores,id',  // Ensure the store exists
+        'discounted_price' => 'required|numeric',
+        'discount_percentage' => 'required|numeric',
+        'stock_message' => 'nullable|string',
+        'availability' => 'required|string',
+        'visit_time' => 'required|date',
+    ]);
 
-    
+    // Check if an update for the same bento, store, and visit time already exists
+    $existingUpdate = BentoUpdate::where('bento_id', $validatedData['bento_id'])
+                                 ->where('store_id', $validatedData['store_id'])
+                                 ->where('visit_time', $validatedData['visit_time'])
+                                 ->first();
 
-    
-
-
-
-
-
-    public function destroy(Bento $bento)
-    {
-        $bento->delete();
-        return response()->noContent();
-    }
-
-    private function saveCategories($categoryIds, Bento $bento)
-    {
-        if (!empty($categoryIds)) {
-            BentoCategory::where('bento_id', $bento->id)->whereNotIn('category_id', $categoryIds)->delete();
-            $existingIds = BentoCategory::where('bento_id', $bento->id)->pluck('category_id')->toArray();
-            $newCategoryIds = array_diff($categoryIds, $existingIds);
-            $data = array_map(fn($id) => ['category_id' => $id, 'bento_id' => $bento->id], $newCategoryIds);
-            BentoCategory::insert($data);
-        }
-    }
-
-    private function saveImages($images, $positions, Bento $bento)
-    {
-        foreach ($positions as $id => $position) {
-            BentoImage::where('id', $id)->update(['position' => $position]);
-        }
-
-        foreach ($images as $id => $image) {
-            $this->validate(request(), [
-                "images.{$id}" => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048'
-            ]);
-
-            $name = Str::random() . '.' . $image->getClientOriginalExtension();
-
-            if (!Storage::putFileAs('public/images', $image, $name)) {
-                throw new Exception("Unable to save file \"{$image->getClientOriginalName()}\"");
-            }
-
-            $relativePath = 'images/' . $name;
-
-            BentoImage::create([
-                'bento_id' => $bento->id,
-                'path' => $relativePath,
-                'url' => URL::to(Storage::url($relativePath)),
-                'mime' => $image->getClientMimeType(),
-                'size' => $image->getSize(),
-                'position' => $positions[$id] ?? $id + 1
-            ]);
-        }
-    }
-
-    private function deleteImages($imageIds, Bento $bento)
-    {
-        $images = BentoImage::where('bento_id', $bento->id)->whereIn('id', $imageIds)->get();
-
-        foreach ($images as $image) {
-            if ($image->path) {
-                Storage::delete('public/' . $image->path);
-            }
-            $image->delete();
-        }
-    }
-
-    public function likeBento(Request $request, Bento $bento)
-    {
-        $user = Auth::user();
-
-        $bento->likes()->where('user_id', $user->id)->delete();
-
-        $bento->likes()->create([
-            'user_id' => $user->id,
-            'type' => 'like'
+    // If no such update exists, create a new one
+    if (!$existingUpdate) {
+        // Create a new BentoUpdate record
+        BentoUpdate::create([
+            'bento_id' => $validatedData['bento_id'],
+            'store_id' => $validatedData['store_id'],
+            'discounted_price' => $validatedData['discounted_price'],
+            'discount_percentage' => $validatedData['discount_percentage'],
+            'stock_message' => $validatedData['stock_message'],
+            'availability' => $validatedData['availability'],
+            'visit_time' => $validatedData['visit_time'],
         ]);
-
-        return response()->json(['message' => 'Bento liked successfully.'], 200);
     }
 
-    public function dislikeBento(Request $request, Bento $bento)
-    {
-        $user = Auth::user();
-
-        $bento->likes()->where('user_id', $user->id)->delete();
-
-        $bento->likes()->create([
-            'user_id' => $user->id,
-            'type' => 'dislike'
-        ]);
-
-        return response()->json(['message' => 'Bento disliked successfully.'], 200);
-    }
-
-    public function commentOnBento(Request $request, Bento $bento)
-    {
-        $request->validate([
-            'comment' => 'required|string|max:500'
-        ]);
-
-        $user = Auth::user();
-
-        $bento->comments()->create([
-            'user_id' => $user->id,
-            'content' => $request->input('comment')
-        ]);
-
-        return response()->json(['message' => 'Comment added successfully.'], 201);
-    }
+    return response()->json(['message' => 'Bento update logged successfully']);
+}
 }

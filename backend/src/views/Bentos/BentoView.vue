@@ -78,7 +78,7 @@ function fetchStoreDetails(storeId) {
 }
 
 function getPhotoUrl(imageUrl) {
-  return `${import.meta.env.VITE_API_BASE_URL}${imageUrl}`; // For Vite
+  return `${import.meta.env.VITE_API_BASE_URL}/storage/${imageUrl}`; // For Vite
 }
 
 </script>

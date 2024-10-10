@@ -4,13 +4,15 @@
 
     <!-- Store Selection -->
     <label for="store">Select Store</label>
-    <treeselect 
-      v-model="selectedStore" 
-      :multiple="false" 
-      :options="storeOptions" 
-      :clearable="true" 
+    <treeselect
+      v-model="selectedStore"
+      :multiple="false"
+      :options="storeOptions"
+      :clearable="true"
       placeholder="Search or select a store"
+      :required="true"
     />
+
 
     <!-- Display batch bento input area once store is selected -->
     <div v-if="selectedStore">
@@ -113,7 +115,7 @@ const route = useRoute(); // Get the current route
 const router = useRouter(); // Define the router hook
 
 // If editing, fetch the bento data to prefill the form
-onMounted(() => {
+onMounted(() => { 
   if (route.params.id) {
     formMode.value = 'Edit';
     fetchStores(); // Ensure that stores are fetched first before fetching the bento
@@ -121,6 +123,17 @@ onMounted(() => {
     fetchStores();
   }
 });
+
+
+// Function to initialize the CSRF cookie
+async function initializeCsrf() {
+  try {
+    await axiosClient.get('/sanctum/csrf-cookie');
+    console.log('CSRF token initialized.');
+  } catch (error) {
+    console.error('Error initializing CSRF token:', error);
+  }
+}
 
 // Handle image upload for each bento
 function handleImageUpload(event, index) {
@@ -170,14 +183,13 @@ function fetchStores() {
     });
 }
 
-// Fetch bento data for editing
 function fetchBento(id) {
   axiosClient.get(`/bentos/${id}`)
     .then(response => {
       const bentoData = response.data;
-      
+
       // Prepopulate the form with the fetched bento data
-      bentos.value = [bentoData]; 
+      bentos.value = [bentoData];
 
       // Ensure the image URL has the correct base URL
       if (bentoData.image_url && !bentoData.image_url.startsWith('http')) {
@@ -185,7 +197,7 @@ function fetchBento(id) {
         bentoData.image_url = `${baseUrl}${bentoData.image_url}`;  // Append base URL if needed
       }
 
-      // Find and set the store in storeOptions based on store_id
+      // Check if the response has store_id and set the selected store
       if (bentoData.store_id) {
         const selectedStoreOption = storeOptions.value.find(option => option.id === bentoData.store_id);
         if (selectedStoreOption) {
@@ -202,95 +214,141 @@ function fetchBento(id) {
 }
 
 
-// Handle saving the bento(s) with confirmation
-function confirmSave() {
-  if (confirm('Are you sure you want to save the bentos?')) {
-    saveBentos();
+
+// Function to check if a bento already exists
+
+
+
+
+
+async function confirmSave() {
+  const storeId = selectedStore.value;
+  console.log("Selected Store ID:", storeId);  // Debugging line
+
+  for (let bento of bentos.value) {
+    if (bento.id) {
+      // This is an edit, no need to check for duplicates, proceed to save
+      await saveBentos(bento.id);  // Pass the existing bento ID to `saveBentos`
+      return;
+    }
+
+    // Call the backend to check if the bento exists (only for new bentos)
+    const response = await axiosClient.get('/bentos/check', {
+      params: { name: bento.name, store_id: storeId },
+      withCredentials: true,
+    });
+
+    const existsInSameStore = response.data.exists_in_same_store;
+    const existsInOtherStore = response.data.exists_in_other_store;
+
+    if (existsInSameStore) {
+      alert(`The bento "${bento.name}" already exists in the selected store.`);
+      return;  // Stop if a duplicate is found
+    } else if (existsInOtherStore) {
+      if (confirm(`The bento "${bento.name}" already exists in another store. Do you want to link it to the selected store?`)) {
+        await axiosClient.post('/bentos/link-store', {
+          bento_id: response.data.bento_id,
+          store_id: storeId,
+          discounted_price: bento.discounted_price,
+          availability: bento.availability,
+          discount_percentage: bento.discount_percentage
+        });
+      }
+    } else {
+      // Call the saveBentos method to create a new bento if no duplicates were found
+      await saveBentos();
+    }
   }
 }
 
-// Save bento updates
-// Handle saving the bento(s)
-// Handle saving the bento(s)
-function saveBentos() {
+
+
+
+
+async function saveBentos(bentoId = null) {
   isSubmitting.value = true;
   const formData = new FormData();
-  const token = localStorage.getItem('TOKEN'); // Retrieve the token from localStorage
+  const token = localStorage.getItem('TOKEN');  // Retrieve the token from localStorage
 
+  // Append form data for each bento in the list
   bentos.value.forEach((bento, index) => {
     formData.append(`bentos[${index}][name]`, bento.name);
     formData.append(`bentos[${index}][original_price]`, bento.original_price);
     formData.append(`bentos[${index}][usual_discounted_price]`, bento.usual_discounted_price);
     formData.append(`bentos[${index}][discount_percentage]`, bento.discount_percentage);
-    formData.append(`bentos[${index}][stock_message]`, bento.stock_message || ''); // Handle undefined stock_message
+    formData.append(`bentos[${index}][stock_message]`, bento.stock_message || '');
     formData.append(`bentos[${index}][calories]`, bento.calories || '');
-    formData.append(`bentos[${index}][description]`, bento.description || ''); 
+    formData.append(`bentos[${index}][description]`, bento.description || '');
     formData.append(`bentos[${index}][availability]`, bento.availability);
-    
-    // Append the store id properly, ensure selectedStore is an object
+
     const storeId = typeof selectedStore.value === 'object' ? selectedStore.value.id : selectedStore.value;
     formData.append(`bentos[${index}][store_id]`, storeId);
 
-    // Append the image file if available
+    // Append image if available
     if (uploadedImages.value[index]) {
       formData.append(`bentos[${index}][image_url]`, uploadedImages.value[index]);
     }
   });
 
-  // Log formData to verify the data before sending
+  // Debugging: Log formData content to console before submission
   console.log('FormData content before submission:');
   for (let pair of formData.entries()) {
     console.log(`${pair[0]}: ${pair[1]}`);
   }
 
-  // Headers with Authorization token
+  // Headers for Authorization and Content-Type
   const headers = {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'multipart/form-data'
   };
 
-  // Update mode: send PUT request
+  // If formMode is 'Edit', update the existing bento (PUT request)
   if (formMode.value === 'Edit') {
-    formData.append('_method', 'PUT');
+    formData.append('_method', 'PUT');  // Laravel handles this as a PUT request
 
+    // Use axios to send a POST request with _method=PUT for updating
     axiosClient.post(`/bentos/${route.params.id}`, formData, { headers })
       .then(() => {
         alert('Bento updated successfully');
-        resetForm();
+        resetForm();  // Reset the form
 
         // Redirect to the bentos page
         router.push({ name: 'app.bentos' });  // Ensure you use the correct route name
       })
       .catch(error => {
         if (error.response && error.response.status === 422) {
-          console.error('Validation error:', error.response.data.errors);  // Log validation errors
+          // Log validation errors if present
+          console.error('Validation error:', error.response.data.errors);
           alert('Validation failed: ' + JSON.stringify(error.response.data.errors));
         } else {
           console.error('Error updating bento:', error);
         }
       })
       .finally(() => {
-        isSubmitting.value = false;
+        isSubmitting.value = false;  // Ensure isSubmitting is set back to false
       });
-
   } else {
-    // Create mode: send POST request
+    // Otherwise, it's a new bento creation (POST request)
     axiosClient.post('/bentos/batch', formData, { headers })
       .then(response => {
         alert('Bentos saved successfully');
-        resetForm();
+        resetForm();  // Reset the form
 
         // Redirect to the bentos page
         router.push({ name: 'app.bentos' });  // Ensure you use the correct route name
       })
       .catch(err => {
-        console.error('Error saving bentos', err);
+        console.error('Error saving bentos:', err);
       })
       .finally(() => {
-        isSubmitting.value = false;
+        isSubmitting.value = false;  // Ensure isSubmitting is set back to false
       });
   }
 }
+
+
+
+
 
 
 

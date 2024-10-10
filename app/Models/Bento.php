@@ -24,7 +24,10 @@ class Bento extends Model
         'stock_message',  // Add this field
     ];
     
-
+    public function updates()
+    {
+        return $this->hasMany(BentoUpdate::class);
+    }
     // Define relationship to comments
     public function likes()
 {

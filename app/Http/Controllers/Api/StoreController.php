@@ -129,4 +129,6 @@ class StoreController extends Controller
 
         return response()->json(['message' => 'Store deleted successfully']);
     }
+
+    
 }

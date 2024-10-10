@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\BentoController;
 use App\Http\Controllers\Api\StoreController;
 use Illuminate\Support\Facades\Route;
 
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-
+Route::get('/bentos/check', [BentoController::class, 'checkBentoExists']);
 
 
 // Routes that require authentication
@@ -34,7 +35,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::put('/stores/{id}', [StoreController::class, 'update']); // Update a store
     Route::delete('/stores/{id}', [StoreController::class, 'destroy']); // Delete a store
     Route::get('bentos/{bento}', [BentoController::class, 'show']);
-    Route::post('/bentos/batch', [BentoController::class, 'storeBatch']);
+    Route::post('/bentos/batch', [BentoController::class, 'storeBatch']);      
     Route::get('/bentos', [BentoController::class, 'getBentos']);
     Route::put('bentos/{bento}', [BentoController::class, 'update']);
     Route::delete('/bentos/{bento}', [BentoController::class, 'destroy']);
@@ -56,7 +57,8 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/dashboard/stores-count', [DashboardController::class, 'activeStores']);
     Route::get('/dashboard/reviews-count', [DashboardController::class, 'activeReviews']);
     //Route::get('/bentos', [BentoController::class, 'index']);
-    Route::post('/bentos/{bento}/update-dynamic', [BentoController::class, 'storeUpdate']);
+    Route::put('/bentos/{bento}/update-dynamic', [BentoController::class, 'storeUpdate']);
+    Route::post('/bento-updates', [BentoController::class, 'logUpdate']);
     Route::get('/dashboard/recent-bentos', [DashboardController::class, 'recentBentos']);
     Route::get('/dashboard/income-amount', [DashboardController::class, 'totalIncome']);
     Route::get('/dashboard/orders-by-country', [DashboardController::class, 'ordersByCountry']);
@@ -78,6 +80,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 // Publicly accessible routes
 
 Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
+
 
 Route::options('{any}', function () {
     return response()->json([], 200);
