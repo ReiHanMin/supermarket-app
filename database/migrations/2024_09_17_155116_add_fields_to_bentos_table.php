@@ -19,8 +19,6 @@ class AddFieldsToBentosTable extends Migration
             $table->decimal('usual_discounted_price', 8, 2)->nullable()->after('usual_discount_percentage');
             $table->time('estimated_discount_time')->nullable()->after('usual_discounted_price');
             $table->string('discount_status')->nullable()->after('estimated_discount_time');
-            $table->string('stock_message')->nullable()->after('discount_status');
-            $table->decimal('average_rating', 3, 2)->default(0)->after('stock_message');
             $table->integer('total_reviews')->default(0)->after('average_rating');
         });
     }
@@ -39,7 +37,6 @@ class AddFieldsToBentosTable extends Migration
                 'usual_discounted_price',
                 'estimated_discount_time',
                 'discount_status',
-                'stock_message',
                 'average_rating',
                 'total_reviews',
             ]);

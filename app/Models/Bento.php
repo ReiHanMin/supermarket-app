@@ -21,7 +21,6 @@ class Bento extends Model
         'reviews_count',
         'store_id',
         'image_url',
-        'stock_message',  // Add this field
     ];
     
     public function updates()

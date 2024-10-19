@@ -73,7 +73,6 @@ class DashboardController extends Controller
                     'bentos.usual_discount_percentage',
                     'bentos.usual_discounted_price',
                     'bentos.estimated_discount_time',
-                    'bentos.stock_message',
                     'bentos.calories',
                     'bentos.discount_percentage',
                     'bentos.availability',

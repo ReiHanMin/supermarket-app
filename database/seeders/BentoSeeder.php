@@ -28,7 +28,6 @@ class BentoSeeder extends Seeder
                 'usual_discounted_price' => 480,
                 'estimated_discount_time' => '16:30',
                 'discount_status' => 'Check Again',
-                'stock_message' => 'Usually runs low by 5 PM',
                 'calories' => 450,
                 'ingredients' => 'Chicken, Rice, Broccoli, Carrots, Teriyaki Sauce',
                 'availability' => 1, // In Stock
@@ -47,7 +46,6 @@ class BentoSeeder extends Seeder
                 'usual_discounted_price' => 680,
                 'estimated_discount_time' => '17:00',
                 'discount_status' => 'Active',
-                'stock_message' => 'Usually available until 6 PM',
                 'calories' => 520,
                 'ingredients' => 'Beef, Rice, Pickles, Soy Sauce',
                 'availability' => 2, // Limited Stock

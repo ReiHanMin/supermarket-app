@@ -9,14 +9,39 @@
     <form v-if="!loading" @submit.prevent="onSubmit">
       <div class="grid grid-cols-3">
         <div class="col-span-2 px-4 pt-5 pb-4">
-          <CustomInput
-            class="mb-2"
-            @change="handlePhotoUpload"
-            label="Store Photo"
-            type="file"
-            :errors="errors['photo']"
-            required
-          />
+          <!-- Store Photo Input -->
+          <div class="mb-4">
+            <label class="font-semibold">Store Photo</label>
+
+            <!-- Display existing store photo if available -->
+            <div v-if="storeData.photo && !photoPreview">
+              <img :src="getPhotoUrl(storeData.photo)" alt="Current Store Photo" class="uploaded-image-preview mb-2 h-24 w-24 object-cover rounded-md" />
+              <!-- Button to delete the current store photo -->
+              <button
+                type="button"
+                class="btn btn-danger delete-image-button"
+                @click="deleteCurrentPhoto"
+              >
+                Delete Current Photo
+              </button>
+            </div>
+
+            <!-- File input for uploading a new photo -->
+            <CustomInput
+              class="mb-2"
+              @change="handlePhotoUpload"
+              label="Upload New Store Photo"
+              type="file"
+              :errors="errors['photo']"
+            />
+
+            <!-- Preview the newly uploaded image before saving -->
+            <div v-if="photoPreview">
+              <img :src="photoPreview" alt="Preview New Image" class="uploaded-image-preview" />
+            </div>
+          </div>
+
+          <!-- Store Name Input -->
           <CustomInput
             class="mb-2"
             v-model="storeData.name"
@@ -24,6 +49,7 @@
             :errors="errors['name']"
             required
           />
+          <!-- Chain Name Select -->
           <CustomSelect
             v-model="storeData.chain_name"
             :options="chainOptions"
@@ -31,24 +57,76 @@
             :errors="errors['chain_name']"
             required
           />
+          <!-- Address Input -->
           <CustomInput
             class="mb-2"
             v-model="storeData.address"
             label="Address"
             :errors="errors['address']"
           />
+          <!-- Latitude Input -->
+          <CustomInput
+            class="mb-2"
+            v-model="storeData.latitude"
+            label="Latitude"
+            :errors="errors['latitude']"
+          />
+          <!-- Longitude Input -->
+          <CustomInput
+            class="mb-2"
+            v-model="storeData.longitude"
+            label="Longitude"
+            :errors="errors['longitude']"
+          />
+          <!-- Email Input -->
           <CustomInput
             class="mb-2"
             v-model="storeData.email"
             label="Email"
             :errors="errors['email']"
           />
+          <!-- Phone Input -->
           <CustomInput
             class="mb-2"
             v-model="storeData.phone"
             label="Phone"
             :errors="errors['phone']"
           />
+          <!-- Weekly Opening Hours -->
+          <div class="mb-4">
+            <h3 class="font-semibold text-lg">Opening Hours</h3>
+            <!-- Loop through each day for input -->
+            <div v-for="(time, day) in weekDays" :key="day" class="mb-2">
+              <label class="font-semibold">{{ day }}</label>
+              <div class="flex space-x-4">
+                <!-- Opening Time -->
+                <input
+                  class="mb-2"
+                  v-model="storeData.opening_hours[day].start"
+                  type="time"
+                  :step="60"
+                  required
+                />
+                <!-- Closing Time -->
+                <input
+                  class="mb-2"
+                  v-model="storeData.opening_hours[day].end"
+                  type="time"
+                  :step="60"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Button to copy Monday's times to all other days -->
+            <button 
+              type="button"
+              class="btn btn-primary mt-3"
+              @click="copyMondayTimes"
+            >
+              Copy Monday Times to All Days
+            </button>
+          </div>
         </div>
       </div>
       <footer class="bg-gray-50 rounded-b-lg px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
@@ -67,7 +145,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import CustomInput from '../../components/core/CustomInput.vue';
 import CustomSelect from '../../components/core/CustomSelect.vue';
 import Spinner from '../../components/core/Spinner.vue';
@@ -83,16 +161,48 @@ const props = defineProps({
 
 const route = useRoute();
 const router = useRouter();
+const photoPreview = ref(null);  // Initialize the photo preview
+
+// Define weekDays for rendering the days of the week
+const weekDays = ref({
+  Monday: 'Monday',
+  Tuesday: 'Tuesday',
+  Wednesday: 'Wednesday',
+  Thursday: 'Thursday',
+  Friday: 'Friday',
+  Saturday: 'Saturday',
+  Sunday: 'Sunday',
+});
 
 const storeData = ref({
   id: null,
   name: '',
   chain_name: '',
   address: '',
+  latitude: '',
+  longitude: '',
   email: '',
   phone: '',
   photo: null,
+  opening_hours: {
+    Monday: { start: '', end: '' },
+    Tuesday: { start: '', end: '' },
+    Wednesday: { start: '', end: '' },
+    Thursday: { start: '', end: '' },
+    Friday: { start: '', end: '' },
+    Saturday: { start: '', end: '' },
+    Sunday: { start: '', end: '' }
+  },
 });
+
+// Watch for changes to opening_hours and log the changes
+watch(
+  () => storeData.value.opening_hours,
+  (newVal) => {
+    console.log('Opening hours changed:', newVal);
+  },
+  { deep: true } // Use deep watch to track changes to nested properties
+);
 
 const errors = ref({});
 const loading = ref(false);
@@ -108,11 +218,33 @@ const chainOptions = [
 onMounted(() => {
   if (route.params.id) {
     loading.value = true;
-    store.dispatch('getStore', route.params.id)  // Fetch store details
+    store.dispatch('getStore', route.params.id)
       .then((response) => {
         loading.value = false;
-        storeData.value = response.data;  // Populate form with store data
-        storeData.value.id = response.data.id;  // Ensure the ID is set
+        storeData.value = response.data;
+
+        // Log to confirm initialization
+        console.log('Store data after fetch:', storeData.value);
+
+        // Ensure opening_hours is always initialized
+        storeData.value.opening_hours = storeData.value.opening_hours || {};
+        const defaultOpeningHours = {
+          Monday: { start: '', end: '' },
+          Tuesday: { start: '', end: '' },
+          Wednesday: { start: '', end: '' },
+          Thursday: { start: '', end: '' },
+          Friday: { start: '', end: '' },
+          Saturday: { start: '', end: '' },
+          Sunday: { start: '', end: '' },
+        };
+
+        storeData.value.opening_hours = {
+          ...defaultOpeningHours,
+          ...storeData.value.opening_hours,
+        };
+
+        // Log the updated opening_hours
+        console.log('Opening hours after initialization:', storeData.value.opening_hours);
       })
       .catch(err => {
         loading.value = false;
@@ -121,9 +253,43 @@ onMounted(() => {
   }
 });
 
+function copyMondayTimes() {
+  const mondayTimes = storeData.value.opening_hours.Monday;
+  
+  // Loop through all the days except Monday
+  for (const day in storeData.value.opening_hours) {
+    if (day !== 'Monday') {
+      storeData.value.opening_hours[day].start = mondayTimes.start;
+      storeData.value.opening_hours[day].end = mondayTimes.end;
+    }
+  }
+}
+
+// Helper function to build the photo URL
+function getPhotoUrl(photoPath) {
+  return photoPath ? `http://localhost:8000${photoPath}` : null;
+}
+
+// Handle deleting the current photo
+function deleteCurrentPhoto() {
+  storeData.value.photo = null;  // Remove the photo URL from the storeData
+  photoPreview.value = null;  // Ensure no new photo is previewed
+
+  // If a temporary preview URL was created, revoke it
+  if (storeData.value.temp_url) {
+    URL.revokeObjectURL(storeData.value.temp_url);
+    storeData.value.temp_url = null;
+  }
+}
+
 function handlePhotoUpload(event) {
   const file = event.target.files ? event.target.files[0] : null;
   if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      photoPreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
     storeData.value.photo = file;
     console.log("Photo uploaded:", file.name);  // Debugging log
   } else {
@@ -131,40 +297,55 @@ function handlePhotoUpload(event) {
   }
 }
 
-
 function onSubmit($event, close = false) {
   loading.value = true;
   errors.value = {};
 
+  console.log('Before submission:', storeData.value.opening_hours);
+
+  // Create a new FormData object for submission
   const formData = new FormData();
 
-  // Append the form data for all required fields
+  // Append form data from storeData (only reading, not modifying)
   formData.append('name', storeData.value.name || '');
   formData.append('chain_name', storeData.value.chain_name || '');
   formData.append('address', storeData.value.address || '');
+  formData.append('latitude', storeData.value.latitude || '');
+  formData.append('longitude', storeData.value.longitude || '');
   formData.append('email', storeData.value.email || '');
   formData.append('phone', storeData.value.phone || '');
 
-  // Handle the photo if it exists and is a file (not a string)
-  if (storeData.value.photo && storeData.value.photo instanceof File) {
-    formData.append('photo', storeData.value.photo);
+  // Append opening hours data for each day of the week (only reading from storeData)
+  for (const day in storeData.value.opening_hours) {
+    const start = storeData.value.opening_hours[day]?.start || '';
+    const end = storeData.value.opening_hours[day]?.end || '';
+
+    formData.append(`opening_hours[${day}][start]`, start);
+    formData.append(`opening_hours[${day}][end]`, end);
+  }
+
+  // Handle photo upload if available (only reading, not modifying storeData)
+  if (!storeData.value.photo || !(storeData.value.photo instanceof File)) {
+    console.warn("No photo uploaded, proceeding without a photo.");
   } else {
-    console.error("Photo is missing or invalid.");
+    formData.append('photo', storeData.value.photo);
   }
 
   // Log FormData contents for debugging
-  console.log("FormData contents:");
-  for (let [key, value] of formData.entries()) {
-    console.log(`${key}: ${value}`);
-  }
+  console.log("FormData contents:", [...formData.entries()]);
 
+  // Use the Vuex action to update or create the store
   if (storeData.value.id) {
-    // Updating store
-    store.dispatch('updateStore', formData)
+    // Updating an existing store
+    formData.append('id', storeData.value.id);  // Append the ID to the formData
+    store.dispatch('updateStore', formData)  // Dispatch the action with formData
       .then(response => {
+        console.log("This is the response: ", response);
         loading.value = false;
+        
+        // Update storeData only after the successful response
         if (response.status === 200) {
-          storeData.value = response.data;
+          storeData.value = { ...response.data };  // Assign new data to storeData
           store.commit('showToast', 'Store was successfully updated');
           store.dispatch('getStores');
           if (close) {
@@ -175,7 +356,7 @@ function onSubmit($event, close = false) {
       .catch(err => {
         loading.value = false;
         if (err.response) {
-          errors.value = err.response.data.errors || {}; // Handle validation errors
+          errors.value = err.response.data.errors || {};  // Handle validation errors
           console.error("Error response:", err.response);
         } else {
           console.error("Unexpected error:", err);
@@ -186,8 +367,10 @@ function onSubmit($event, close = false) {
     store.dispatch('createStore', formData)
       .then(response => {
         loading.value = false;
+
+        // Update storeData only after the successful response
         if (response.status === 201) {
-          storeData.value = response.data;
+          storeData.value = { ...response.data };  // Assign new data to storeData
           store.commit('showToast', 'Store was successfully created');
           store.dispatch('getStores');
           if (close) {
@@ -200,19 +383,27 @@ function onSubmit($event, close = false) {
       .catch(err => {
         loading.value = false;
         if (err.response) {
-          errors.value = err.response.data.errors || {}; // Handle validation errors
+          errors.value = err.response.data.errors || {};  // Handle validation errors
           console.error("Error response:", err.response);
         } else {
           console.error("Unexpected error:", err);
         }
       });
   }
+  
+  return {
+    storeData,
+    photoPreview,
+    weekDays,
+    handlePhotoUpload,
+    deleteCurrentPhoto,
+    getPhotoUrl,
+    onSubmit,
+    errors,
+    loading,
+    copyMondayTimes
+  };
 }
-
-
-
-
-
 </script>
 
 <style scoped></style>

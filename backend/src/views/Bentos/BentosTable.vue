@@ -42,7 +42,6 @@
           <TableHeaderCell field="original_price" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('original_price')">Original Price (¥)</TableHeaderCell>
           <TableHeaderCell field="discount_percentage" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('discount_percentage')">Discount Percentage (%)</TableHeaderCell>
           <TableHeaderCell field="usual_discounted_price" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('usual_discounted_price')">Discounted Price (¥)</TableHeaderCell>
-          <TableHeaderCell field="stock_message">Stock Message</TableHeaderCell>
           <TableHeaderCell field="availability" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('availability')">Availability</TableHeaderCell>
           <TableHeaderCell field="store_name" :sort-field="sortField" :sort-direction="sortDirection" @click="sortBentos('store_name')">Store Name</TableHeaderCell>
           <TableHeaderCell field="actions">Actions</TableHeaderCell>
@@ -74,9 +73,6 @@
           </td>
           <td class="border-b p-2">
             <input type="number" v-model="bento.usual_discounted_price" class="w-full px-2 py-1 border rounded" />
-          </td>
-          <td class="border-b p-2">
-            <input type="text" v-model="bento.stock_message" class="w-full px-2 py-1 border rounded" />
           </td>
           <td class="border-b p-2">
             <input type="text" v-model="bento.availability" class="w-full px-2 py-1 border rounded" />
@@ -254,7 +250,6 @@ function saveBentoUpdates() {
         store_id: selectedStore.value,  // Use the selected store ID here
         discounted_price: bento.usual_discounted_price,  // Update the discounted price
         discount_percentage: bento.discount_percentage,  // Update the discount percentage
-        stock_message: bento.stock_message,  // Update the stock message
         availability: bento.availability,  // Update the availability status
         visit_time: bento.visit_time  // Update the visit time
       });
@@ -265,7 +260,6 @@ function saveBentoUpdates() {
         store_id: selectedStore.value,  // Use the selected store ID here as well
         discounted_price: bento.usual_discounted_price,
         discount_percentage: bento.discount_percentage,
-        stock_message: bento.stock_message,
         availability: bento.availability,
         visit_time: bento.visit_time
       });

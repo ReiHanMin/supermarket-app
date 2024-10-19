@@ -14,7 +14,6 @@ class BentoUpdate extends Model
         'store_id',
         'discounted_price',
         'discount_percentage',
-        'stock_message',
         'availability',
         'visit_time'
     ];

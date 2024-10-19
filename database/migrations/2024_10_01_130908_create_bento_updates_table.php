@@ -18,7 +18,6 @@ class CreateBentoUpdatesTable extends Migration
             $table->unsignedBigInteger('bento_id');
             $table->decimal('discounted_price', 8, 2)->nullable();
             $table->decimal('discount_percentage', 5, 2)->nullable();
-            $table->string('stock_message', 255)->nullable();
             $table->string('availability', 255)->nullable();
             $table->timestamp('visit_time')->nullable();
             $table->timestamps();

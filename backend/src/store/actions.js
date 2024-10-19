@@ -139,27 +139,24 @@ export async function getBentos({ commit }, { storeId, ...params }) {
 
 
 export async function getStores({ commit }, params) {
-  commit("setStores", [true]);  // Set loading to true before the request
+  commit("setLoading", { entity: "stores", isLoading: true });  // Set loading to true before the request
   try {
-    // Retrieve the token from localStorage
     const token = localStorage.getItem('TOKEN');
-
-    // Perform the API request with the token in the Authorization header
     const response = await axiosClient.get("/stores", {
       params,
       headers: {
-        'Authorization': `Bearer ${token}`,  // Use the token in the header
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
-
-    console.log("Stores response:", response);  // Debugging line
     commit("setStores", [false, response.data]);  // Pass data and set loading to false
   } catch (error) {
     console.error("Error fetching stores:", error);
-    commit("setStores", [false]);  // Set loading to false in case of error
+    commit("setLoading", { entity: "stores", isLoading: false });  // Set loading to false in case of error
   }
 }
+
+
 
 
 
@@ -215,7 +212,8 @@ export async function getStore({ commit }, id) {
 
 // Update store
 export async function updateStore({ commit }, storeData) {
-  console.log("Store Data ID:", storeData.get('id'));  // Logs the ID for debugging
+  // Log FormData contents for debugging
+  console.log("FormData contents from inside updateStore:", [...storeData.entries()]);
 
   // Add the `_method` field to simulate a PUT request
   storeData.append('_method', 'PUT');
@@ -235,6 +233,7 @@ export async function updateStore({ commit }, storeData) {
     throw error;
   }
 }
+
 
 
 

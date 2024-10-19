@@ -49,7 +49,6 @@ export function setBentosData(state, response) {
       usual_discounted_price: bento.usual_discounted_price,
       estimated_discount_time: bento.estimated_discount_time,
       discount_status: bento.discount_status,
-      stock_message: bento.stock_message,
       average_rating: bento.average_rating,
       total_reviews: bento.total_reviews,
       status: bento.status,
@@ -85,6 +84,10 @@ export function setStores(state, [loading, stores = {}]) {
     state.stores.data = stores.data || [];  // Default to an empty array if no data
     state.stores.meta = stores.meta || {};  // Default to an empty object for meta
   }
+}
+
+export function setLoading(state, { entity, isLoading }) {
+  state[entity].loading = isLoading;
 }
 
 

@@ -23,12 +23,7 @@ class BentoController extends Controller
     return view('product.bento', compact('bento')); // Return the Blade view with the bento data
     }
 
-        public function landingPage()
-    {
-        $bentos = Bento::all(); // or apply any filters if necessary
-        $stores = Store::all();
-        return view('product.index', compact('bentos', 'stores'));
-    }
+     
 
 
 

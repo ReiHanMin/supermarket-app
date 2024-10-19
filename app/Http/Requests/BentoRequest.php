@@ -21,10 +21,9 @@ class BentoRequest extends FormRequest
         'bentos.*.original_price' => ['required', 'numeric', 'min:0.01'],
         'bentos.*.usual_discounted_price' => ['nullable', 'numeric'],
         'bentos.*.discount_percentage' => ['nullable', 'numeric'],
-        'bentos.*.stock_message' => ['nullable', 'string'],
         'bentos.*.calories' => ['nullable', 'numeric'],
         'bentos.*.description' => ['nullable', 'string'],
-        'bentos.*.availability' => ['required', 'string'],
+        'bentos.*.availability' => ['required', 'integer', 'min:0', 'max:2'],
         'bentos.*.store_id' => ['required', 'exists:stores,id'],
         'bentos.*.image_url' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif', 'max:2048'],
     ];

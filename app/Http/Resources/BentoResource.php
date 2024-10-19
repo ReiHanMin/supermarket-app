@@ -27,7 +27,6 @@ class BentoResource extends JsonResource
         'usual_discounted_price' => $this->usual_discounted_price,
         'calories' => $this->calories,
         'availability' => $this->availability,
-        'stock_message' => $this->stock_message,
         'discount_percentage' => $this->discount_percentage,
         'store_id' => $this->store_id,
         'store_name' => $this->store->name ?? null,

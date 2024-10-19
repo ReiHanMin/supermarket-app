@@ -20,9 +20,9 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
 */
-Route::get('/', [BentoController::class, 'index'])->name('home');
 Route::get('/', [StoreViewController::class, 'productIndex'])->name('home');
-Route::get('/', [BentoController::class, 'landingPage'])->name('home');
+Route::post('/update-location', [StoreViewController::class, 'updateLocation'])->name('store.updateLocation');
+Route::get('/store/{storeId}', [StoreViewController::class, 'showStoreDetail'])->name('store.detail');
 Route::get('/bento/{bento}', [BentoController::class, 'show'])->name('bento.show');
 Route::middleware(['guestOrVerified'])->group(function () {
     Route::get('/category/{category:slug}', [ProductController::class, 'byCategory'])->name('byCategory');

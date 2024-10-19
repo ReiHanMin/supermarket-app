@@ -43,19 +43,20 @@
         <CustomInput v-model="bento.usual_discounted_price" label="Discounted Price" type="number" prepend="¥" :error="errors[index]?.usual_discounted_price" />
         <CustomInput v-model="bento.discount_percentage" label="Discount Percentage" type="number" prepend="%" :disabled="true" />
 
-        <!-- Stock and Availability -->
-        <CustomInput v-model="bento.stock_message" label="Stock Message" :error="errors[index]?.stock_message" />
         
-        <!-- Availability Dropdown -->
+        <!-- Availability Input (Numeric) -->
         <div class="form-group">
-          <label for="availability">Availability</label>
-          <select v-model="bento.availability" class="form-control">
-            <option value="Many">Many</option>
-            <option value="A few left">A few left</option>
-            <option value="Sold out">Sold out</option>
-          </select>
+          <label for="availability">Availability (Number of Bentos Available)</label>
+          <input 
+            type="number" 
+            v-model="bento.availability" 
+            class="form-control" 
+            min="0" 
+            placeholder="Enter number of available bentos"
+          />
           <span v-if="errors[index]?.availability" class="text-danger">{{ errors[index]?.availability }}</span>
         </div>
+
 
         <!-- Additional Info -->
         <CustomInput v-model="bento.calories" label="Calories" type="number" :error="errors[index]?.calories" />
@@ -100,10 +101,9 @@ const bentos = ref([
     original_price: '', 
     usual_discounted_price: '', 
     discount_percentage: '', 
-    stock_message: '', 
     calories: '', 
     description: '', 
-    availability: 'Many'  // Set default availability
+    availability: 0  // Set default availability
   }
 ]);
 const errors = ref([]);
@@ -276,7 +276,6 @@ async function saveBentos(bentoId = null) {
     formData.append(`bentos[${index}][original_price]`, bento.original_price);
     formData.append(`bentos[${index}][usual_discounted_price]`, bento.usual_discounted_price);
     formData.append(`bentos[${index}][discount_percentage]`, bento.discount_percentage);
-    formData.append(`bentos[${index}][stock_message]`, bento.stock_message || '');
     formData.append(`bentos[${index}][calories]`, bento.calories || '');
     formData.append(`bentos[${index}][description]`, bento.description || '');
     formData.append(`bentos[${index}][availability]`, bento.availability);
@@ -360,10 +359,9 @@ function addBento() {
     original_price: '', 
     usual_discounted_price: '', 
     discount_percentage: '', 
-    stock_message: '', 
     calories: '', 
     description: '', 
-    availability: 'Many'  // Set default value for new bentos
+    availability: 0  // Set default value for new bentos
   });
   errors.value.push({});
 }
@@ -393,10 +391,9 @@ function resetForm() {
     original_price: '',
     usual_discounted_price: '',
     discount_percentage: '',
-    stock_message: '',
     calories: '',
     description: '',
-    availability: 'Many'
+    availability: 0
   }];
   selectedStore.value = null;
   visitTime.value = null; // Reset visit time

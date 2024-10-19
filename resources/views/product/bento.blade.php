@@ -18,7 +18,7 @@
                     <span class="text-gray-600 ml-2">4.5 (32件のレビュー) <a href="#" class="text-blue-500 hover:underline">レビューを見る</a></span>
                 </div>
                 <p class="text-lg text-purple-600 font-semibold">通常価格: <span class="line-through">{{ number_format($bento->original_price, 0) }}円</span></p>
-                <p class="text-2xl font-bold text-red-600 mt-2">割引価格（税込）: {{ number_format($bento->discounted_price, 0) }}円</p>
+                <p class="text-2xl font-bold text-red-600 mt-2">割引価格（税込）: {{ number_format($bento->usual_discounted_price, 0) }}円</p>
                 <p class="mt-2 text-gray-700">割引: 割引はまだ適用されていない可能性があります。午後4時30分頃にもう一度ご確認ください。</p>
                 <p class="mt-2"><strong>在庫状況:</strong> {{ $bento->availability }}</p>
                 <p class="mt-2"><strong>推定割引時間:</strong> ~4:30 PM</p>

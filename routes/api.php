@@ -29,7 +29,7 @@ Route::get('/bentos/check', [BentoController::class, 'checkBentoExists']);
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/user', [\App\Http\Controllers\Api\AuthController::class, 'getUser']);
     Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
-    Route::get('/stores', [StoreController::class, 'index']); // Fetch all stores
+    Route::get('/stores', [StoreController::class, 'getStoresApi']); // Fetch all stores
     Route::post('/stores', [StoreController::class, 'store']); // Create a new store
     Route::get('/stores/{id}', [StoreController::class, 'show']); // Get a store by ID
     Route::put('/stores/{id}', [StoreController::class, 'update']); // Update a store

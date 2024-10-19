@@ -77,7 +77,7 @@ class BentoController extends Controller
 
     public function storeBatch(Request $request)
     {
-        // Validate the fields coming from the form, including store_id validation
+        // Validate the fields coming from the form, including id validation
         $validator = Validator::make($request->all(), [
             'bentos.*.name' => 'required|string|max:255',
             'bentos.*.original_price' => 'required|numeric',
@@ -85,8 +85,7 @@ class BentoController extends Controller
             'bentos.*.calories' => 'nullable|numeric',
             'bentos.*.description' => 'required|string',
             'bentos.*.image_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'bentos.*.stock_message' => 'nullable|string|max:255',
-            'bentos.*.availability' => 'required|string|in:Many,A few left,Sold out',
+            'bentos.*.availability' => 'required|integer|min:0|max:2',
             'bentos.*.discount_percentage' => 'nullable|numeric',
             'bentos.*.store_id' => 'required|exists:stores,id',  // Validate that store_id is required and must exist in stores table
         ]);
@@ -108,7 +107,6 @@ class BentoController extends Controller
                 $bento->calories = $bentoData['calories'] ?? null;
                 $bento->description = $bentoData['description'];
                 $bento->availability = $bentoData['availability']; // Save the availability field
-                $bento->stock_message = $bentoData['stock_message'] ?? null; // Save stock message
                 $bento->usual_discounted_price = $bentoData['usual_discounted_price'] ?? null; // Save discounted price
                 $bento->discount_percentage = $bentoData['discount_percentage'] ?? null; // Save discount percentage
     
@@ -132,7 +130,6 @@ class BentoController extends Controller
                     'calories' => $bentoData['calories'] ?? null,
                     'description' => $bentoData['description'],
                     'availability' => $bentoData['availability'],
-                    'stock_message' => $bentoData['stock_message'] ?? null,
                     'usual_discounted_price' => $bentoData['usual_discounted_price'] ?? null,
                     'discount_percentage' => $bentoData['discount_percentage'] ?? null,
                 ]);
@@ -256,7 +253,6 @@ public function update(BentoRequest $request, Bento $bento)
             'availability' => $bentoData['availability'],  
             'usual_discounted_price' => $bentoData['usual_discounted_price'],
             'discount_percentage' => $bentoData['discount_percentage'],
-            'stock_message' => $bentoData['stock_message'] ?? null,
         ]);
 
         // Handle image upload if it exists
@@ -290,8 +286,7 @@ public function storeUpdate(Request $request, $bentoId)
         'store_id' => 'required|exists:stores,id', // Validate that store_id is required and must exist in stores table
         'discounted_price' => 'required|numeric',
         'discount_percentage' => 'required|numeric',
-        'stock_message' => 'nullable|string',
-        'availability' => 'nullable|string',
+        'availability' => 'required|integer|min:0|max:2',
         'visit_time' => 'required|date',
     ]);
 
@@ -306,7 +301,6 @@ public function storeUpdate(Request $request, $bentoId)
             'current_discount' => $validatedData['discount_percentage'],
             'stock_level' => $validatedData['availability'],
             'visit_time' => $validatedData['visit_time'],
-            'stock_message' => $validatedData['stock_message']
         ]);
     } else {
         // If no entry exists in bento_store, create one (fallback case)
@@ -316,7 +310,6 @@ public function storeUpdate(Request $request, $bentoId)
             'current_discount' => $validatedData['discount_percentage'],
             'stock_level' => $validatedData['availability'],
             'visit_time' => $validatedData['visit_time'],
-            'stock_message' => $validatedData['stock_message']
         ]);
     }
 
@@ -326,7 +319,6 @@ public function storeUpdate(Request $request, $bentoId)
         'store_id' => $validatedData['store_id'], // Set the store ID
         'discounted_price' => $validatedData['discounted_price'],
         'discount_percentage' => $validatedData['discount_percentage'],
-        'stock_message' => $validatedData['stock_message'],
         'availability' => $validatedData['availability'],
         'visit_time' => $validatedData['visit_time'],
     ]);
@@ -342,8 +334,7 @@ public function logUpdate(Request $request)
         'store_id' => 'required|exists:stores,id',  // Ensure the store exists
         'discounted_price' => 'required|numeric',
         'discount_percentage' => 'required|numeric',
-        'stock_message' => 'nullable|string',
-        'availability' => 'required|string',
+        'availability' => 'required|integer|min:0|max:2',
         'visit_time' => 'required|date',
     ]);
 
@@ -361,7 +352,6 @@ public function logUpdate(Request $request)
             'store_id' => $validatedData['store_id'],
             'discounted_price' => $validatedData['discounted_price'],
             'discount_percentage' => $validatedData['discount_percentage'],
-            'stock_message' => $validatedData['stock_message'],
             'availability' => $validatedData['availability'],
             'visit_time' => $validatedData['visit_time'],
         ]);

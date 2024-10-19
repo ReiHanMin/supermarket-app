@@ -20,7 +20,13 @@ class Store extends Model
         'address',
         'email',
         'phone',
-        'photo'
+        'photo',
+        'latitude',
+        'longitude',
+    ];
+
+    protected $casts = [
+        'opening_hours' => 'array',
     ];
 
     /**
